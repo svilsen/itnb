@@ -1,14 +1,14 @@
 Package: kinb
 Type: Package
-Title: What the Package Does (Title Case)
+Title: k-inlfated ((k - 1) truncated) Negative Binomial Distribution
 Version: 0.1
 Date: 2016-07-15
 Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Maintainer: Søren Vilsen <svilsen@math.aau.dk>
+Description:
+License:
 LazyData: TRUE
-Imports: 
+Imports:
     Rcpp (>= 0.12.5)
-LinkingTo: 
+LinkingTo:
     Rcpp
