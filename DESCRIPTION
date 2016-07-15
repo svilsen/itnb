@@ -3,7 +3,7 @@ Type: Package
 Title: k-inlfated ((k - 1) truncated) Negative Binomial Distribution
 Version: 0.1
 Date: 2016-07-15
-Author: Who wrote it
+Author: Søren Vilsen
 Maintainer: Søren Vilsen <svilsen@math.aau.dk>
 Description:
 License:
