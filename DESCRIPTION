@@ -9,6 +9,14 @@ Description:
 License:
 LazyData: TRUE
 Imports:
-    Rcpp (>= 0.12.5)
-LinkingTo:
-    Rcpp
+    Rcpp (>= 0.12.1),
+    RcppEigen,
+    BH
+LinkingTo: Rcpp,
+    RcppEigen,
+    BH
+Depends:
+    Rcpp,
+    RcppEigen,
+    BH
+RoxygenNote: 6.0.1
