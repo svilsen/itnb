@@ -32,7 +32,7 @@ rtnbinom = function(n, t, mu, theta) {
     fill
 }
 
-#' rktnb
+#' ritnb
 #'
 #' @description Generates random numbers from a K-inflated t-truncated negative binomial distribution.
 #'
@@ -45,7 +45,7 @@ rtnbinom = function(n, t, mu, theta) {
 #'
 #' @return Random generated sample.
 #' @export
-rktnb <- function(n, k, t = NULL, mu, theta, p) {
+ritnb <- function(n, k, t = NULL, mu, theta, p) {
     if (is.null(t)) {
         res <- c(rep(k, floor(n*p)), rnbinom(n - floor(n*p), size = theta, mu = mu))
     }
@@ -56,7 +56,7 @@ rktnb <- function(n, k, t = NULL, mu, theta, p) {
     return(res[sample(seq_along(res), replace = FALSE)])
 }
 
-#' dktnb
+#' ditnb
 #'
 #' @description The density of a vector x following the k-inflated t-truncated negative binomial distribution.
 #'
@@ -70,7 +70,7 @@ rktnb <- function(n, k, t = NULL, mu, theta, p) {
 #'
 #' @return A vector.
 #' @export
-dktnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
+ditnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
     log_density <- theta*(log(theta) - log(theta + mu)) + lgamma(theta + x) - lgamma(theta) - lfactorial(x) + x*(log(mu) - log(theta + mu))
 
     if (!is.null(t)) {
@@ -94,7 +94,7 @@ dktnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
     return(res)
 }
 
-#' pktnb
+#' pitnb
 #'
 #' @description The probability mass function of the k-inflated t-truncated negative binomial distribution.
 #'
@@ -108,15 +108,15 @@ dktnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
 #'
 #' @return The probability mass.
 #' @export
-pktnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
-    res <- sum(dktnb(1:q, k, t, mu, theta, p, log))
+pitnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
+    res <- sum(ditnb(1:q, k, t, mu, theta, p, log))
     return(res)
 }
 
 
 ## The complete and the restricted log-likelihoods
 .complete_log_likelihood <- function (mu, theta, p, x, z, k, x_k, t) {
-    log_density <- dktnb(x, k, mu, theta, 0, return_log = TRUE, t = t)
+    log_density <- ditnb(x, k, mu, theta, 0, return_log = TRUE, t = t)
 
     if (p == 0) {
         res <- (1 - z)*(log_density)
@@ -132,11 +132,11 @@ pktnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
     mu <- pars[1]
     theta <- pars[2]
 
-    log_likelihood <- dktnb(x, k, mu, theta, p, t = t, return_log = TRUE)
+    log_likelihood <- ditnb(x, k, mu, theta, p, t = t, return_log = TRUE)
     return(-sum(log_likelihood))
 }
 
-#' Control function for the \link{ktnb_optimisation} function.
+#' Control function for the \link{itnb_optimisation} function.
 #'
 #' @description Creates a list of default options.
 #'
@@ -146,9 +146,9 @@ pktnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
 #' @param iteration_min The minimum number of allowed iterations.
 #' @param save_trace TRUE/FALSE should the entire trace be stored?
 #'
-#' @return A list of default arguments for the \link{ktnb_optimisation} function.
+#' @return A list of default arguments for the \link{itnb_optimisation} function.
 #' @export
-ktnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_max = 10000, iteration_min = 5, save_trace = FALSE) {
+itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_max = 10000, iteration_min = 5, save_trace = FALSE) {
     if (is.null(iteration_min) || is.character(iteration_min) || is.na(iteration_min)) {
         iteration_min <- iteration_max
     }
@@ -159,24 +159,24 @@ ktnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_
 
 #' @title Parameter optimisation.
 #'
-#' @description EM algorithm for ktnb parameter optimisation.
+#' @description EM algorithm for itnb parameter optimisation.
 #'
 #' @param x Observed data (numeric/integers).
 #' @param k The point of inflation.
 #' @param t The point of truncation.
-#' @param control A control object, see \link{ktnb_optimisation_control} for details.
+#' @param control A control object, see \link{itnb_optimisation_control} for details.
 #'
 #' @return A list of the estimated parameters, (mu, theta, p).
-#' @example inst/examples/ktnb_optimisation_example.R
+#' @example inst/examples/itnb_optimisation_example.R
 #' @export
-ktnb_optimisation <- function (x, k, t, control = ktnb_optimisation_control()) {
+itnb_optimisation <- function (x, k, t, control = itnb_optimisation_control()) {
     x_k <- x == k
     p <- mean(x_k)
     mu <- mean(x[!x_k])
     var_x <- var(x[!x_k])
 
     theta <- if((var_x > mu)) mu^2/(var_x - mu) else 100
-    z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * dktnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
+    z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * ditnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
 
     complete_log_likelihood <- .complete_log_likelihood(mu, theta, p, x, z_star, k, x_k, t)
     not_converged <- TRUE
@@ -193,7 +193,7 @@ ktnb_optimisation <- function (x, k, t, control = ktnb_optimisation_control()) {
     i = 1
     while (not_converged) {
         ## E-step
-        z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * dktnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
+        z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * ditnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
 
         ## M-step
         p <- sum(z_star * as.numeric(x_k)) / sum(1 - z_star*(1 - as.numeric(x_k)))
@@ -235,15 +235,15 @@ ktnb_optimisation <- function (x, k, t, control = ktnb_optimisation_control()) {
                 logLikelihood = complete_log_likelihood, converged = !not_converged,
                 trace = returned_trace)
 
-    class(res) <- "ktnb"
+    class(res) <- "itnb"
     return(res)
 }
 
-#' Confidence envelopes of ktnb-object.
+#' Confidence envelopes of itnb-object.
 #'
-#' @description Simulated confidence envelopes of the parameters estimated by the \link{ktnb_optimisation} function.
+#' @description Simulated confidence envelopes of the parameters estimated by the \link{itnb_optimisation} function.
 #'
-#' @param ktnb_object An object of class 'ktnb'.
+#' @param itnb_object An object of class 'itnb'.
 #' @param level The confidence level.
 #' @param trace TRUE/FALSE, should a trace be shown?
 #' @param number_of_simulations The number of simulations used to create the confidence envelopes.
@@ -251,14 +251,14 @@ ktnb_optimisation <- function (x, k, t, control = ktnb_optimisation_control()) {
 #'
 #' @return A matrix (or vector) with columns giving lower and upper confidence limits for each parameter. These will be labelled as (1-level)/2 and 1 - (1-level)/2 in % (by default 2.5% and 97.5%).
 #' @export
-simulate_confidence_envelopes <- function(ktnb_object, level = 0.95, trace = T, number_of_simulations = 30, plot_simulations = FALSE) {
-    n = ktnb_object$n
-    k = ktnb_object$k
-    t = ktnb_object$t
+simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, number_of_simulations = 30, plot_simulations = FALSE) {
+    n = itnb_object$n
+    k = itnb_object$k
+    t = itnb_object$t
 
-    mu = ktnb_object$mu
-    theta = ktnb_object$theta
-    p = ktnb_object$p
+    mu = itnb_object$mu
+    theta = itnb_object$theta
+    p = itnb_object$p
 
     envelope_mu <- rep(NA, number_of_simulations)
     envelope_theta <- rep(NA, number_of_simulations)
@@ -273,8 +273,8 @@ simulate_confidence_envelopes <- function(ktnb_object, level = 0.95, trace = T, 
         if (trace)
             pb$tick()
 
-        simulation_i <- rktnb(n, k, t, mu, theta, p)
-        optimised_simulation_i <- ktnb_optimisation(simulation_i, k, t, ktnb_optimisation_control(trace = F))
+        simulation_i <- ritnb(n, k, t, mu, theta, p)
+        optimised_simulation_i <- itnb_optimisation(simulation_i, k, t, itnb_optimisation_control(trace = F))
 
         envelope_mu[i] <- optimised_simulation_i$mu
         envelope_theta[i] <- optimised_simulation_i$theta
@@ -304,19 +304,19 @@ simulate_confidence_envelopes <- function(ktnb_object, level = 0.95, trace = T, 
     return(confint_data_frame)
 }
 
-#' Plot parameter trace of ktnb-object
+#' Plot parameter trace of itnb-object
 #'
-#' @description A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{ktnb_optimisation} function.
+#' @description A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{itnb_optimisation} function.
 #'
-#' @param ktnb_object An object of the class 'ktnb'.
+#' @param itnb_object An object of the class 'itnb'.
 #'
 #' @return A ggplot.
 #' @export
-ggplot.ktnb <- function(ktnb_object) {
-    if (is.null(ktnb_object$trace))
-        stop("The 'trace' tibble was not found. \nSet 'save_trace = TRUE' in the 'ktnb_optimisation_control' function.")
+ggplot.itnb <- function(itnb_object) {
+    if (is.null(itnb_object$trace))
+        stop("The 'trace' tibble was not found. \nSet 'save_trace = TRUE' in the 'itnb_optimisation_control' function.")
 
-    trace_tibble <- ktnb_object$trace[-1, ] %>% rename("Log-likelihood" = LogLikelihood, "pi" = p)
+    trace_tibble <- itnb_object$trace[-1, ] %>% rename("Log-likelihood" = LogLikelihood, "pi" = p)
     trace_tibble_long <- trace_tibble %>% select(-AbsoluteChangeLogLikelihood) %>% gather(para, val, -Iteration)
 
     pp <- ggplot(trace_tibble_long, aes(x = Iteration, y = val)) +

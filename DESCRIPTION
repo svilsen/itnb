@@ -1,12 +1,12 @@
-Package: ktnb
+Package: itnb
 Type: Package
-Title: K-Inlfated T-Truncated Negative Binomial Distribution
+Title: I-Inlfated T-Truncated Negative Binomial Distribution
 Version: 0.1
 Date: 2018-02-15
 Encoding: UTF-8
 Author: Søren B. Vilsen
 Maintainer: Søren B. Vilsen <svilsen@math.aau.dk>
-Description: A very simple models for handling inflated and truncated over-dispersed count data.
+Description: Very simple models for handling inflated and truncated over-dispersed count data.
 License: MIT + file LICENSE
 LazyData: TRUE
 Imports:
