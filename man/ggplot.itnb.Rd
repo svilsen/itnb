@@ -13,5 +13,5 @@
 A ggplot.
 }
 \description{
-A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{itnb_optimisation} function.
+A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{itnb_optimisation} function. Note: the function can only be used if the \link{itnb_optimisation} function was used with the argument \code{save_trace} set ot \code{TRUE}.
 }

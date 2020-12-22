@@ -2,9 +2,8 @@
 #' @importFrom tidyr 'gather'
 #' @importFrom methods 'show'
 #' @importFrom stats "optim" "pbeta" "quantile" "rnbinom" "var"
-#' @import ggplot2
-#'
 #' @importFrom progress 'progress_bar'
+#' @import ggplot2
 NULL
 
 globalVariables(c("..density..", "AbsoluteChangeLogLikelihood", "Iteration", "LogLikelihood", "env", "para", "p", "val"))
@@ -14,43 +13,45 @@ globalVariables(c("..density..", "AbsoluteChangeLogLikelihood", "Iteration", "Lo
 #' @description Generates numbers from a t-truncated negative binomial distribution.
 #'
 #' @param n The number of generated samples.
-#' @param t The truncation point.
 #' @param mu The expected value.
 #' @param theta The overdispersion.
+#' @param t The truncation point.
 #'
 #' @return Random generated sample.
 #' @export
-rtnbinom = function(n, t, mu, theta) {
+rtnbinom = function(n, mu, theta, t) {
     fill = rep(NA, n)
-    for(i in 1:n){
+    for(j in 1:n){
         val = t
         while(val <= t){
-            val = rnbinom(1, size = theta, mu = mu)
+            val = rnbinom(n = 1, size = theta, mu = mu)
         }
-        fill[i] = val
+
+        fill[j] = val
     }
+
     fill
 }
 
 #' ritnb
 #'
-#' @description Generates random numbers from a K-inflated t-truncated negative binomial distribution.
+#' @description Generates random numbers from a i-inflated t-truncated negative binomial distribution.
 #'
 #' @param n The number of observations.
-#' @param k The inflation point.
-#' @param t The truncation point.
 #' @param mu The expected value.
 #' @param theta The overdispersion.
 #' @param p The proportion of inflation.
+#' @param i The inflation point.
+#' @param t The truncation point.
 #'
 #' @return Random generated sample.
 #' @export
-ritnb <- function(n, k, t = NULL, mu, theta, p) {
+ritnb <- function(n, mu, theta, p, i, t = NULL) {
     if (is.null(t)) {
-        res <- c(rep(k, floor(n*p)), rnbinom(n - floor(n*p), size = theta, mu = mu))
+        res <- c(rep(i, floor(n*p)), rnbinom(n = n - floor(n * p), size = theta, mu = mu))
     }
     else if (t | is.numeric(t)) {
-        res <- c(rep(k, floor(n*p)), rtnbinom(n - floor(n*p), mu = mu, theta = theta, t = t))
+        res <- c(rep(i, floor(n*p)), rtnbinom(n = n - floor(n * p), mu = mu, theta = theta, t = t))
     }
 
     return(res[sample(seq_along(res), replace = FALSE)])
@@ -58,27 +59,29 @@ ritnb <- function(n, k, t = NULL, mu, theta, p) {
 
 #' ditnb
 #'
-#' @description The density of a vector x following the k-inflated t-truncated negative binomial distribution.
+#' @description The density of a vector x following the i-inflated t-truncated negative binomial distribution.
 #'
 #' @param x A vector of quantiles.
-#' @param k The inflation point.
-#' @param t The truncation point.
 #' @param mu The expected value.
 #' @param theta The overdispersion.
 #' @param p The proportion of inflation.
+#' @param i The inflation point.
+#' @param t The truncation point.
 #' @param return_log TRUE/FALSE, should the log pmf be returned?
 #'
 #' @return A vector.
 #' @export
-ditnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
-    log_density <- theta*(log(theta) - log(theta + mu)) + lgamma(theta + x) - lgamma(theta) - lfactorial(x) + x*(log(mu) - log(theta + mu))
+ditnb <- function(x, mu, theta, p, i, t = NULL, return_log = FALSE) {
+    log_density <- theta * (log(theta) - log(theta + mu)) +
+        lgamma(theta + x) - lgamma(theta) - lfactorial(x) +
+        x * (log(mu) - log(theta + mu))
 
     if (!is.null(t)) {
         if (t & !is.numeric(t)) {
-            t <- k - 1
+            t <- i - 1
         }
 
-        if (is.numeric(t) & (length(t) == 1) & (t < k) & (abs(t - round(t)) < .Machine$double.eps)) {
+        if (is.numeric(t) & (length(t) == 1) & (t < i) & (abs(t - round(t)) < .Machine$double.eps)) {
             log_density <- log_density - log(pbeta(mu/(mu + theta), t + 1, theta))
 
             x_t <- (x <= t)
@@ -87,52 +90,56 @@ ditnb <- function(x, k, t = NULL, mu, theta, p, return_log = FALSE) {
     }
 
     log_res <- log(1 - p) + log_density
-    x_k <- x == k
-    log_res[x_k] <- log(p + (1 - p)*exp(log_density[x_k]))
+    x_i <- x == i
+    log_res[x_i] <- log(p + (1 - p) * exp(log_density[x_i]))
 
-    res <- if (return_log) log_res else exp(log_res)
+    res <- log_res
+    if (!return_log) {
+        res <- exp(log_res)
+    }
+
     return(res)
 }
 
 #' pitnb
 #'
-#' @description The probability mass function of the k-inflated t-truncated negative binomial distribution.
+#' @description The probability mass function of the i-inflated t-truncated negative binomial distribution.
 #'
 #' @param q A vector of quantiles.
-#' @param k The inflation point.
-#' @param t The truncation point.
 #' @param mu The expected value.
 #' @param theta The overdispersion.
 #' @param p The proportion of inflation.
+#' @param i The inflation point.
+#' @param t The truncation point.
 #' @param return_log TRUE/FALSE, should log of the cdf be returned?
 #'
 #' @return The probability mass.
 #' @export
-pitnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
-    res <- sum(ditnb(1:q, k, t, mu, theta, p, log))
+pitnb <- function(q, mu, theta, p, i, t = NULL, return_log = FALSE) {
+    res <- sum(ditnb(x = seq_len(q), mu = mu, theta = theta, p = p, i = i, t = t, return_log = return_log))
     return(res)
 }
 
 
 ## The complete and the restricted log-likelihoods
-.complete_log_likelihood <- function (mu, theta, p, x, z, k, x_k, t) {
-    log_density <- ditnb(x, k, mu, theta, 0, return_log = TRUE, t = t)
+.complete_log_likelihood <- function (mu, theta, p, x, z, i, x_i, t) {
+    log_density <- ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = TRUE)
 
     if (p == 0) {
-        res <- (1 - z)*(log_density)
+        res <- (1 - z) * log_density
     }
     else {
-        res <- z*log(p)*sum(as.numeric(x_k)) + (1 - z)*(log(1 - p) + log_density)
+        res <- z * log(p) * sum(as.numeric(x_i)) + (1 - z) * (log(1 - p) + log_density)
     }
 
     return(sum(res))
 }
 
-.restricted_log_likelihood <- function(pars, x, p, k, t) {
+.restricted_log_likelihood <- function(pars, x, p, i, t) {
     mu <- pars[1]
     theta <- pars[2]
 
-    log_likelihood <- ditnb(x, k, mu, theta, p, t = t, return_log = TRUE)
+    log_likelihood <- ditnb(x = x, mu = mu, theta = theta, p = p, i = i, t = t, return_log = TRUE)
     return(-sum(log_likelihood))
 }
 
@@ -148,10 +155,12 @@ pitnb <- function(q, k, t = NULL, mu, theta, p, return_log = FALSE) {
 #'
 #' @return A list of default arguments for the \link{itnb_optimisation} function.
 #' @export
-itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_max = 10000, iteration_min = 5, save_trace = FALSE) {
+itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_max = 10000,
+                                      iteration_min = 5, save_trace = FALSE) {
     if (is.null(iteration_min) || is.character(iteration_min) || is.na(iteration_min)) {
         iteration_min <- iteration_max
     }
+
     res <- list(trace = trace, tolerance = tolerance, iteration_max = iteration_max,
                 iteration_min = iteration_min, save_trace = save_trace)
     return(res)
@@ -162,23 +171,28 @@ itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_
 #' @description EM algorithm for itnb parameter optimisation.
 #'
 #' @param x Observed data (numeric/integers).
-#' @param k The point of inflation.
+#' @param i The point of inflation.
 #' @param t The point of truncation.
 #' @param control A control object, see \link{itnb_optimisation_control} for details.
 #'
 #' @return A list of the estimated parameters, (mu, theta, p).
 #' @example inst/examples/itnb_optimisation_example.R
 #' @export
-itnb_optimisation <- function (x, k, t, control = itnb_optimisation_control()) {
-    x_k <- x == k
-    p <- mean(x_k)
-    mu <- mean(x[!x_k])
-    var_x <- var(x[!x_k])
+itnb_optimisation <- function (x, i, t, control = itnb_optimisation_control()) {
+    x_i <- x == i
+    p <- mean(x_i)
+    mu <- mean(x[!x_i])
+    var_x <- var(x[!x_i])
 
-    theta <- if((var_x > mu)) mu^2/(var_x - mu) else 100
-    z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * ditnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
+    theta <- ifelse(var_x > mu, mu^2 / (var_x - mu), 100)
+    z_star <- (p * as.numeric(x_i)) /
+        (p * as.numeric(x_i) + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
 
-    complete_log_likelihood <- .complete_log_likelihood(mu, theta, p, x, z_star, k, x_k, t)
+    complete_log_likelihood <- .complete_log_likelihood(
+        mu = mu, theta = theta, p = p, x = x,
+        z = z_star, i = i, x_i = x_i, t = t
+    )
+
     not_converged <- TRUE
     if (control$trace) {
         cat("Iteration :", 0, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", NA, "\n")
@@ -186,44 +200,66 @@ itnb_optimisation <- function (x, k, t, control = itnb_optimisation_control()) {
     }
     if (control$save_trace) {
         trace_list <- list()
-        trace_list[[1]] <- data.frame(Iteration = 0, mu = mu, theta = theta, p = p, LogLikelihood = complete_log_likelihood,
-                                      AbsoluteChangeLogLikelihood = NA)
+        trace_list[[1]] <- data.frame(
+            Iteration = 0,
+            mu = mu,
+            theta = theta,
+            p = p,
+            LogLikelihood = complete_log_likelihood,
+            AbsoluteChangeLogLikelihood = NA
+        )
     }
 
-    i = 1
+    j = 1
     while (not_converged) {
         ## E-step
-        z_star <- (p * as.numeric(x_k))/(p * as.numeric(x_k) + (1 - p) * ditnb(x, k, t = t, mu, theta, 0, return_log = FALSE))
+        z_star <- (p * as.numeric(x_i)) /
+            (p * as.numeric(x_i) + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
 
         ## M-step
-        p <- sum(z_star * as.numeric(x_k)) / sum(1 - z_star*(1 - as.numeric(x_k)))
+        p <- sum(z_star * as.numeric(x_i)) / sum(1 - z_star * (1 - as.numeric(x_i)))
 
-        pars <- optim(par = c(mu, theta), fn = .restricted_log_likelihood,
-                              x = x, p = p, k = k, t = t,
-                              method = "L-BFGS-B", lower = c(t, .Machine$double.eps), upper = c(Inf, Inf),
-                              control = list(trace = F))$par
+        pars <- optim(
+            par = c(mu, theta),
+            fn = .restricted_log_likelihood,
+            x = x,
+            p = p,
+            i = i,
+            t = t,
+            method = "L-BFGS-B",
+            lower = c(t, .Machine$double.eps),
+            upper = c(Inf, Inf),
+            control = list(trace = FALSE)
+        )$par
 
         mu <- pars[1]
         theta <- pars[2]
 
-
+        ## Updating convergence results
         complete_log_likelihood_old <- complete_log_likelihood
-        complete_log_likelihood <- .complete_log_likelihood(mu, theta, p, x, z_star, k, x_k, t)
+        complete_log_likelihood <- .complete_log_likelihood(mu = mu, theta = theta, p = p, x = x, z = z_star, i = i, x_i = x_i, t = t)
         change_log_likelihood <- abs(complete_log_likelihood - complete_log_likelihood_old)
 
-        not_converged <- if (i < control$iteration_min) TRUE else ((change_log_likelihood > control$tolerance) && (i < control$iteration_max))
+        not_converged <- ifelse(j < control$iteration_min, TRUE, (change_log_likelihood > control$tolerance) && (j < control$iteration_max))
 
+        ## Tracing
         if (control$trace) {
-            cat("Iteration :", i, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
+            cat("Iteration :", j, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
             cat("\t Parameters: ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
         }
 
         if (control$save_trace) {
-            trace_list[[i + 1]] <- data.frame(Iteration = i, mu = mu, theta = theta, p = p, LogLikelihood = complete_log_likelihood,
-                                           AbsoluteChangeLogLikelihood = change_log_likelihood)
+            trace_list[[j + 1]] <- data.frame(
+                Iteration = j,
+                mu = mu,
+                theta = theta,
+                p = p,
+                LogLikelihood = complete_log_likelihood,
+                AbsoluteChangeLogLikelihood = change_log_likelihood
+            )
         }
 
-        i = i + 1
+        j = j + 1
     }
 
     returned_trace <- NULL
@@ -231,9 +267,17 @@ itnb_optimisation <- function (x, k, t, control = itnb_optimisation_control()) {
         returned_trace <- trace_list %>% bind_rows() %>% as_tibble()
     }
 
-    res <- list(n = length(x), k = k, t = t, mu = mu, theta = theta, p = p,
-                logLikelihood = complete_log_likelihood, converged = !not_converged,
-                trace = returned_trace)
+    res <- list(
+        n = length(x),
+        i = i,
+        t = t,
+        mu = mu,
+        theta = theta,
+        p = p,
+        logLikelihood = complete_log_likelihood,
+        converged = !not_converged,
+        trace = returned_trace
+    )
 
     class(res) <- "itnb"
     return(res)
@@ -253,7 +297,7 @@ itnb_optimisation <- function (x, k, t, control = itnb_optimisation_control()) {
 #' @export
 simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, number_of_simulations = 30, plot_simulations = FALSE) {
     n = itnb_object$n
-    k = itnb_object$k
+    i = itnb_object$i
     t = itnb_object$t
 
     mu = itnb_object$mu
@@ -265,20 +309,24 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
     envelope_p <- rep(NA, number_of_simulations)
 
     if (trace) {
-        pb <- progress_bar$new(format = paste0("Simulating confidence envelopes (size ", number_of_simulations, ")", ": [:bar] :percent Eta: :eta"),
-                               total = number_of_simulations, clear = FALSE, width = 120)
+        pb <- progress_bar$new(
+            format = paste0("Simulating confidence envelopes (size ", number_of_simulations, ")", ": [:bar] :percent Eta: :eta"),
+                               total = number_of_simulations,
+            clear = FALSE,
+            width = 120
+        )
     }
 
-    for (i in 1:number_of_simulations) {
+    for (j in 1:number_of_simulations) {
         if (trace)
             pb$tick()
 
-        simulation_i <- ritnb(n, k, t, mu, theta, p)
-        optimised_simulation_i <- itnb_optimisation(simulation_i, k, t, itnb_optimisation_control(trace = F))
+        simulation_j <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+        optimised_simulation_j <- itnb_optimisation(x = simulation_j, i = i, t = t, itnb_optimisation_control(trace = FALSE))
 
-        envelope_mu[i] <- optimised_simulation_i$mu
-        envelope_theta[i] <- optimised_simulation_i$theta
-        envelope_p[i] <- optimised_simulation_i$p
+        envelope_mu[j] <- optimised_simulation_j$mu
+        envelope_theta[j] <- optimised_simulation_j$theta
+        envelope_p[j] <- optimised_simulation_j$p
     }
 
     alpha <- (1 - level) / 2
@@ -289,8 +337,8 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
 
     if (plot_simulations) {
         pp <- ggplot(data.frame(env = c(envelope_mu, envelope_theta, envelope_p),
-                          para = rep(c("mu", "theta", "pi"), each = number_of_simulations)),
-               aes(x = env, colour = para, fill = para)) +
+                                para = rep(c("mu", "theta", "pi"), each = number_of_simulations)),
+                     aes(x = env, colour = para, fill = para)) +
             geom_density(aes(y = ..density..), alpha = 0.7) + xlab("") + ylab("Density") +
             facet_wrap(~para, scales = "free", ncol = 1, labeller = label_parsed) +
             theme_bw(base_size = 13) + theme(legend.position = "none")
@@ -306,7 +354,7 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
 
 #' Plot parameter trace of itnb-object
 #'
-#' @description A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{itnb_optimisation} function.
+#' @description A wrap function for ggplot2, plotting the Expectation-Maximisation parameter trace, which can returned by the \link{itnb_optimisation} function. Note: the function can only be used if the \link{itnb_optimisation} function was used with the argument \code{save_trace} set ot \code{TRUE}.
 #'
 #' @param itnb_object An object of the class 'itnb'.
 #'

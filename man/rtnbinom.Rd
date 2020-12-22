@@ -4,16 +4,16 @@
 \alias{rtnbinom}
 \title{rtnbinom}
 \usage{
-rtnbinom(n, t, mu, theta)
+rtnbinom(n, mu, theta, t)
 }
 \arguments{
 \item{n}{The number of generated samples.}
 
-\item{t}{The truncation point.}
-
 \item{mu}{The expected value.}
 
 \item{theta}{The overdispersion.}
+
+\item{t}{The truncation point.}
 }
 \value{
 Random generated sample.

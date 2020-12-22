@@ -4,14 +4,10 @@
 \alias{ditnb}
 \title{ditnb}
 \usage{
-ditnb(x, k, t = NULL, mu, theta, p, return_log = FALSE)
+ditnb(x, mu, theta, p, i, t = NULL, return_log = FALSE)
 }
 \arguments{
 \item{x}{A vector of quantiles.}
-
-\item{k}{The inflation point.}
-
-\item{t}{The truncation point.}
 
 \item{mu}{The expected value.}
 
@@ -19,11 +15,15 @@ ditnb(x, k, t = NULL, mu, theta, p, return_log = FALSE)
 
 \item{p}{The proportion of inflation.}
 
+\item{i}{The inflation point.}
+
+\item{t}{The truncation point.}
+
 \item{return_log}{TRUE/FALSE, should the log pmf be returned?}
 }
 \value{
 A vector.
 }
 \description{
-The density of a vector x following the k-inflated t-truncated negative binomial distribution.
+The density of a vector x following the i-inflated t-truncated negative binomial distribution.
 }

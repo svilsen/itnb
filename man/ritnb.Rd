@@ -4,24 +4,24 @@
 \alias{ritnb}
 \title{ritnb}
 \usage{
-ritnb(n, k, t = NULL, mu, theta, p)
+ritnb(n, mu, theta, p, i, t = NULL)
 }
 \arguments{
 \item{n}{The number of observations.}
-
-\item{k}{The inflation point.}
-
-\item{t}{The truncation point.}
 
 \item{mu}{The expected value.}
 
 \item{theta}{The overdispersion.}
 
 \item{p}{The proportion of inflation.}
+
+\item{i}{The inflation point.}
+
+\item{t}{The truncation point.}
 }
 \value{
 Random generated sample.
 }
 \description{
-Generates random numbers from a K-inflated t-truncated negative binomial distribution.
+Generates random numbers from a i-inflated t-truncated negative binomial distribution.
 }

@@ -4,12 +4,12 @@
 \alias{itnb_optimisation}
 \title{Parameter optimisation.}
 \usage{
-itnb_optimisation(x, k, t, control = itnb_optimisation_control())
+itnb_optimisation(x, i, t, control = itnb_optimisation_control())
 }
 \arguments{
 \item{x}{Observed data (numeric/integers).}
 
-\item{k}{The point of inflation.}
+\item{i}{The point of inflation.}
 
 \item{t}{The point of truncation.}
 
@@ -22,15 +22,15 @@ A list of the estimated parameters, (mu, theta, p).
 EM algorithm for itnb parameter optimisation.
 }
 \examples{
-library("ktnb")
+library("itnb")
 
 n = 2000
-k = 94
+i = 94
 t = 93
 mu = 100
 theta = 10
 p = 0.2
 
-x <- rktnb(n, k, t, mu, theta, p)
-ktnb_object <- ktnb_optimisation(x, k, t)
+x <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+itnb_optimisation(x = x, i = i, t = t)
 }

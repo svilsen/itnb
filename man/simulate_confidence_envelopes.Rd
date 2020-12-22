@@ -4,8 +4,13 @@
 \alias{simulate_confidence_envelopes}
 \title{Confidence envelopes of itnb-object.}
 \usage{
-simulate_confidence_envelopes(itnb_object, level = 0.95, trace = T,
-  number_of_simulations = 30, plot_simulations = FALSE)
+simulate_confidence_envelopes(
+  itnb_object,
+  level = 0.95,
+  trace = T,
+  number_of_simulations = 30,
+  plot_simulations = FALSE
+)
 }
 \arguments{
 \item{itnb_object}{An object of class 'itnb'.}

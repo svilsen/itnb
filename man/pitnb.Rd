@@ -4,14 +4,10 @@
 \alias{pitnb}
 \title{pitnb}
 \usage{
-pitnb(q, k, t = NULL, mu, theta, p, return_log = FALSE)
+pitnb(q, mu, theta, p, i, t = NULL, return_log = FALSE)
 }
 \arguments{
 \item{q}{A vector of quantiles.}
-
-\item{k}{The inflation point.}
-
-\item{t}{The truncation point.}
 
 \item{mu}{The expected value.}
 
@@ -19,11 +15,15 @@ pitnb(q, k, t = NULL, mu, theta, p, return_log = FALSE)
 
 \item{p}{The proportion of inflation.}
 
+\item{i}{The inflation point.}
+
+\item{t}{The truncation point.}
+
 \item{return_log}{TRUE/FALSE, should log of the cdf be returned?}
 }
 \value{
 The probability mass.
 }
 \description{
-The probability mass function of the k-inflated t-truncated negative binomial distribution.
+The probability mass function of the i-inflated t-truncated negative binomial distribution.
 }

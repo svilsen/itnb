@@ -2,7 +2,7 @@ Package: itnb
 Type: Package
 Title: I-Inlfated T-Truncated Negative Binomial Distribution
 Version: 0.1
-Date: 2018-02-15
+Date: 2020-12-20
 Encoding: UTF-8
 Author: Søren B. Vilsen
 Maintainer: Søren B. Vilsen <svilsen@math.aau.dk>
@@ -15,4 +15,4 @@ Imports:
     ggplot2,
     progress,
     methods
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.1

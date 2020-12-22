@@ -4,8 +4,13 @@
 \alias{itnb_optimisation_control}
 \title{Control function for the \link{itnb_optimisation} function.}
 \usage{
-itnb_optimisation_control(trace = TRUE, tolerance = 1e-06,
-  iteration_max = 10000, iteration_min = 5, save_trace = FALSE)
+itnb_optimisation_control(
+  trace = TRUE,
+  tolerance = 1e-06,
+  iteration_max = 10000,
+  iteration_min = 5,
+  save_trace = FALSE
+)
 }
 \arguments{
 \item{trace}{TRUE/FALSE show trace?}
