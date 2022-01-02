@@ -147,7 +147,7 @@ pitnb <- function(q, mu, theta, p, i, t = NULL, return_log = FALSE) {
 #'
 #' @description Creates a list of default options.
 #'
-#' @param trace TRUE/FALSE show trace?
+#' @param trace Numeric >= 0 showing a trace every '\code{trace}' iterations.
 #' @param tolerance Convergence tolerance.
 #' @param iteration_max The maximum number of allowed iterations.
 #' @param iteration_min The minimum number of allowed iterations.
@@ -155,7 +155,7 @@ pitnb <- function(q, mu, theta, p, i, t = NULL, return_log = FALSE) {
 #'
 #' @return A list of default arguments for the \link{itnb_optimisation} function.
 #' @export
-itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_max = 10000,
+itnb_optimisation_control <- function(trace = 0, tolerance = 1e-6, iteration_max = 10000,
                                       iteration_min = 5, save_trace = FALSE) {
     if (is.null(iteration_min) || is.character(iteration_min) || is.na(iteration_min)) {
         iteration_min <- iteration_max
@@ -175,7 +175,7 @@ itnb_optimisation_control <- function(trace = TRUE, tolerance = 1e-6, iteration_
 #' @param t The point of truncation.
 #' @param control A control object, see \link{itnb_optimisation_control} for details.
 #'
-#' @return A list of the estimated parameters, (mu, theta, p).
+#' @return A list of the parameters: (i, t, mu, theta, p).
 #' @example inst/examples/itnb_optimisation_example.R
 #' @export
 itnb_optimisation <- function (x, i, t, control = itnb_optimisation_control()) {
@@ -194,10 +194,11 @@ itnb_optimisation <- function (x, i, t, control = itnb_optimisation_control()) {
     )
 
     not_converged <- TRUE
-    if (control$trace) {
+    if (control$trace > 0) {
         cat("Iteration :", 0, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", NA, "\n")
         cat("\t Parameters (Initial): ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
     }
+
     if (control$save_trace) {
         trace_list <- list()
         trace_list[[1]] <- data.frame(
@@ -243,7 +244,7 @@ itnb_optimisation <- function (x, i, t, control = itnb_optimisation_control()) {
         not_converged <- ifelse(j < control$iteration_min, TRUE, (change_log_likelihood > control$tolerance) && (j < control$iteration_max))
 
         ## Tracing
-        if (control$trace) {
+        if ((control$trace > 0) & (((j %% control$trace) == 0) || (!not_converged))) {
             cat("Iteration :", j, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
             cat("\t Parameters: ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
         }
@@ -295,14 +296,14 @@ itnb_optimisation <- function (x, i, t, control = itnb_optimisation_control()) {
 #'
 #' @return A matrix (or vector) with columns giving lower and upper confidence limits for each parameter. These will be labelled as (1-level)/2 and 1 - (1-level)/2 in % (by default 2.5% and 97.5%).
 #' @export
-simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, number_of_simulations = 30, plot_simulations = FALSE) {
-    n = itnb_object$n
-    i = itnb_object$i
-    t = itnb_object$t
+simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, number_of_simulations = 101, plot_simulations = FALSE) {
+    n <- itnb_object$n
+    i <- itnb_object$i
+    t <- itnb_object$t
 
-    mu = itnb_object$mu
-    theta = itnb_object$theta
-    p = itnb_object$p
+    mu <- itnb_object$mu
+    theta <- itnb_object$theta
+    p <- itnb_object$p
 
     envelope_mu <- rep(NA, number_of_simulations)
     envelope_theta <- rep(NA, number_of_simulations)
@@ -311,7 +312,7 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
     if (trace) {
         pb <- progress_bar$new(
             format = paste0("Simulating confidence envelopes (size ", number_of_simulations, ")", ": [:bar] :percent Eta: :eta"),
-                               total = number_of_simulations,
+            total = number_of_simulations,
             clear = FALSE,
             width = 120
         )
@@ -322,7 +323,7 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
             pb$tick()
 
         simulation_j <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
-        optimised_simulation_j <- itnb_optimisation(x = simulation_j, i = i, t = t, itnb_optimisation_control(trace = FALSE))
+        optimised_simulation_j <- itnb_optimisation(x = simulation_j, i = i, t = t, itnb_optimisation_control(trace = 0))
 
         envelope_mu[j] <- optimised_simulation_j$mu
         envelope_theta[j] <- optimised_simulation_j$theta
@@ -337,7 +338,7 @@ simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = T, 
 
     if (plot_simulations) {
         pp <- ggplot(data.frame(env = c(envelope_mu, envelope_theta, envelope_p),
-                                para = rep(c("mu", "theta", "pi"), each = number_of_simulations)),
+                                para = factor(rep(c("mu", "theta", "pi"), each = number_of_simulations)), levels = c("mu", "theta", "pi")),
                      aes(x = env, colour = para, fill = para)) +
             geom_density(aes(y = ..density..), alpha = 0.7) + xlab("") + ylab("Density") +
             facet_wrap(~para, scales = "free", ncol = 1, labeller = label_parsed) +
