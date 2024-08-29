@@ -17,7 +17,7 @@ ritnb(n, mu, theta, p, i, t)
 
 \item{i}{Numeric: The inflation point.}
 
-\item{t}{Numeric: The truncation point.}
+\item{t}{Numeric (< i): The truncation point.}
 }
 \value{
 A vector of size \code{n} containing realisations of a itnb distribution.

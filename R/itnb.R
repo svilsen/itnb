@@ -21,7 +21,7 @@ rtnbinom = function(n, mu, theta, t) {
 #' @param theta Numeric: The overdispersion.
 #' @param p Numeric: The inflation proportion.
 #' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point.
+#' @param t Numeric (< i): The truncation point.
 #'
 #' @return A vector of size \code{n} containing realisations of a itnb distribution.
 #' @export
@@ -54,17 +54,25 @@ ritnb <- function(n, mu, theta, p, i, t) {
         stop("'t' has to be numeric.")
     }
 
-    ##
-    if (is.null(t)) {
-        res <- c(rep(i, floor(n*p)), rnbinom(n = n - floor(n * p), size = theta, mu = mu))
-    }
-    else {
+    if (is.numeric(t)) {
+        if (t >= i) {
+            stop("'t' has to be smaller than 'i'.")
+        }
+
         t <- ceiling(t)
-        res <- c(rep(i, floor(n*p)), rtnbinom(n = n - floor(n * p), mu = mu, theta = theta, t = t))
     }
 
     ##
-    return(res[sample(seq_along(res), replace = FALSE)])
+    if (is.null(t)) {
+        res <- c(rep(i, floor(n * p)), rnbinom(n = n - floor(n * p), size = theta, mu = mu))
+    }
+    else {
+        res <- c(rep(i, floor(n * p)), rtnbinom(n = n - floor(n * p), mu = mu, theta = theta, t = t))
+    }
+
+    ##
+    res <- res[sample(n, n, replace = FALSE)]
+    return(res)
 }
 
 #' ditnb
@@ -76,13 +84,13 @@ ritnb <- function(n, mu, theta, p, i, t) {
 #' @param theta Numeric: The overdispersion.
 #' @param p Numeric: The inflation proportion.
 #' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point (NB: can be set to \code{NULL}).
+#' @param t Numeric (< i): The truncation point (NB: can be set to \code{NULL}).
 #' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?
 #' @param return_log TRUE/FALSE: should the logarithm of the probabilities be returned?
 #'
 #' @return A vector the size as \code{x} containing the probability of each value.
 #' @export
-ditnb <- function(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log = FALSE) {
+ditnb <- function(x, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) {
     ##
     if (!is.numeric(x)) {
         stop("'x' has to be numeric.")
@@ -111,6 +119,14 @@ ditnb <- function(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log =
         stop("'t' has to be numeric.")
     }
 
+    if (is.numeric(t)) {
+        if (t >= i) {
+            stop("'t' has to be smaller than 'i'.")
+        }
+
+        t <- ceiling(t)
+    }
+
     ##
     log_density <- theta * (log(theta) - log(theta + mu)) +
         lgamma(theta + x) - lgamma(theta) - lfactorial(x) +
@@ -118,7 +134,7 @@ ditnb <- function(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log =
 
     if (!is.null(t)) {
         t <- ceiling(t)
-        log_density <- log_density - log(pbeta(mu/(mu + theta), t + 1, theta))
+        log_density <- log_density - log(pbeta(mu / (mu + theta), t + 1, theta))
 
         x_t <- (x <= t)
         log_density[x_t] <- -Inf
@@ -147,13 +163,13 @@ ditnb <- function(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log =
 #' @param theta Numeric: The overdispersion.
 #' @param p Numeric: The inflation proportion.
 #' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point.
+#' @param t Numeric (< i): The truncation point.
 #' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?
 #' @param return_log TRUE/FALSE: should log of the cmf be returned?
 #'
 #' @return A vector the size as \code{q} containing the cumulative probability of each value.
 #' @export
-pitnb <- function(q, mu, theta, p, i, t = NULL, lower_tail = TRUE, return_log = FALSE) {
+pitnb <- function(q, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) {
     ##
     if (!is.numeric(q)) {
         stop("'q' has to be numeric.")

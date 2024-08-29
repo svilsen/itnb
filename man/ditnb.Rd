@@ -4,7 +4,7 @@
 \alias{ditnb}
 \title{ditnb}
 \usage{
-ditnb(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log = FALSE)
+ditnb(x, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE)
 }
 \arguments{
 \item{x}{Numeric: A vector of quantiles.}
@@ -17,7 +17,7 @@ ditnb(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log = FALSE)
 
 \item{i}{Numeric: The inflation point.}
 
-\item{t}{Numeric: The truncation point (NB: can be set to \code{NULL}).}
+\item{t}{Numeric (< i): The truncation point (NB: can be set to \code{NULL}).}
 
 \item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?}
 

@@ -10,11 +10,11 @@ em_itnb(x, i, t, control = list())
 \method{em_itnb}{numeric}(x, i, t, control = list())
 }
 \arguments{
-\item{x}{Vector: Observed counts.}
+\item{x}{Numeric: Observed counts.}
 
 \item{i}{Numeric: The inflation point.}
 
-\item{t}{Numeric: The truncation point.}
+\item{t}{Numeric (< i): The truncation point.}
 
 \item{control}{List: A control object, see \link{em_itnb_control} for details.}
 }

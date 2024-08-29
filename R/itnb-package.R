@@ -1,9 +1,6 @@
-#' @keywords internal
-"_PACKAGE"
-
 #' @title ITNB: Inflated and truncated negative binomial distribution
 #'
-#' @R$authors Søren B. Vilsen <svilsen@math.aau.dk>
+#' @author Søren B. Vilsen <svilsen@math.aau.dk>
 #'
 #' @importFrom stats 'optim' 'pbeta' 'quantile' 'rnbinom' 'var'
 #' @importFrom progress 'progress_bar'

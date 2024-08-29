@@ -4,7 +4,7 @@
 \alias{pitnb}
 \title{pitnb}
 \usage{
-pitnb(q, mu, theta, p, i, t = NULL, lower_tail = TRUE, return_log = FALSE)
+pitnb(q, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE)
 }
 \arguments{
 \item{q}{Numeric: A vector of quantiles.}
@@ -17,7 +17,7 @@ pitnb(q, mu, theta, p, i, t = NULL, lower_tail = TRUE, return_log = FALSE)
 
 \item{i}{Numeric: The inflation point.}
 
-\item{t}{Numeric: The truncation point.}
+\item{t}{Numeric (< i): The truncation point.}
 
 \item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?}
 

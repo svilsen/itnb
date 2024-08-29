@@ -27,9 +27,12 @@ p <- 0.2
 
 ## Generating random variates
 x <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
-hist(x, breaks = "fd")
 
-## Estimating the parameters
+## Plotting sample
+mids <- hist(x, breaks = seq(min(x), max(x)), plot = FALSE)$mids
+hist(x, breaks = seq(min(x), max(x)), probability = TRUE); points(mids, ditnb(mids, mu, theta, p, i, t), type = "l", lwd = 2, col = "dodgerblue2")
+
+## Estimating parameters
 m <- em_itnb(
     x = x, 
     i = i, 
@@ -40,15 +43,15 @@ m <- em_itnb(
     )
 )
 
-##
+## Plotting trace of EM-algorithm 
 plot(m, log = "x")
 
-##
+## Sampling CI's
 ci_p <- simulate_ci(
     m, 
     level = 0.95, 
     trace = TRUE, 
-    nr_simulations = 25, 
+    nr_simulations = 250, 
     parametric = TRUE,
     plot = TRUE
 )
