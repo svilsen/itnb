@@ -8,11 +8,7 @@ Author: Søren B. Vilsen
 Maintainer: Søren B. Vilsen <svilsen@math.aau.dk>
 Description: Very simple models for handling inflated and truncated over-dispersed count data.
 License: MIT + file LICENSE
-LazyData: TRUE
 Imports:
-    dplyr,
-    tidyr,
-    ggplot2,
-    progress,
-    methods
-RoxygenNote: 7.1.1
+    stats,
+    progress
+RoxygenNote: 7.3.1

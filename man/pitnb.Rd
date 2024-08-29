@@ -4,26 +4,28 @@
 \alias{pitnb}
 \title{pitnb}
 \usage{
-pitnb(q, mu, theta, p, i, t = NULL, return_log = FALSE)
+pitnb(q, mu, theta, p, i, t = NULL, lower_tail = TRUE, return_log = FALSE)
 }
 \arguments{
-\item{q}{A vector of quantiles.}
+\item{q}{Numeric: A vector of quantiles.}
 
-\item{mu}{The expected value.}
+\item{mu}{Numeric: The expected value.}
 
-\item{theta}{The overdispersion.}
+\item{theta}{Numeric: The overdispersion.}
 
-\item{p}{The proportion of inflation.}
+\item{p}{Numeric: The inflation proportion.}
 
-\item{i}{The inflation point.}
+\item{i}{Numeric: The inflation point.}
 
-\item{t}{The truncation point.}
+\item{t}{Numeric: The truncation point.}
 
-\item{return_log}{TRUE/FALSE, should log of the cdf be returned?}
+\item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?}
+
+\item{return_log}{TRUE/FALSE: should log of the cmf be returned?}
 }
 \value{
-The probability mass.
+A vector the size as \code{q} containing the cumulative probability of each value.
 }
 \description{
-The probability mass function of the i-inflated t-truncated negative binomial distribution.
+The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 }

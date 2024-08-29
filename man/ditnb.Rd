@@ -4,26 +4,28 @@
 \alias{ditnb}
 \title{ditnb}
 \usage{
-ditnb(x, mu, theta, p, i, t = NULL, return_log = FALSE)
+ditnb(x, mu, theta, p, i = 0, t = 0, lower_tail = TRUE, return_log = FALSE)
 }
 \arguments{
-\item{x}{A vector of quantiles.}
+\item{x}{Numeric: A vector of quantiles.}
 
-\item{mu}{The expected value.}
+\item{mu}{Numeric: The expected value.}
 
-\item{theta}{The overdispersion.}
+\item{theta}{Numeric: The overdispersion.}
 
-\item{p}{The proportion of inflation.}
+\item{p}{Numeric: The inflation proportion.}
 
-\item{i}{The inflation point.}
+\item{i}{Numeric: The inflation point.}
 
-\item{t}{The truncation point.}
+\item{t}{Numeric: The truncation point (NB: can be set to \code{NULL}).}
 
-\item{return_log}{TRUE/FALSE, should the log pmf be returned?}
+\item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?}
+
+\item{return_log}{TRUE/FALSE: should the logarithm of the probabilities be returned?}
 }
 \value{
-A vector.
+A vector the size as \code{x} containing the probability of each value.
 }
 \description{
-The density of a vector x following the i-inflated t-truncated negative binomial distribution.
+The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 }

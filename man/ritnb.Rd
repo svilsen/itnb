@@ -4,24 +4,24 @@
 \alias{ritnb}
 \title{ritnb}
 \usage{
-ritnb(n, mu, theta, p, i, t = NULL)
+ritnb(n, mu, theta, p, i, t)
 }
 \arguments{
-\item{n}{The number of observations.}
+\item{n}{Numeric: The number of observations.}
 
-\item{mu}{The expected value.}
+\item{mu}{Numeric: The expected value.}
 
-\item{theta}{The overdispersion.}
+\item{theta}{Numeric: The overdispersion.}
 
-\item{p}{The proportion of inflation.}
+\item{p}{Numeric: The inflation proportion.}
 
-\item{i}{The inflation point.}
+\item{i}{Numeric: The inflation point.}
 
-\item{t}{The truncation point.}
+\item{t}{Numeric: The truncation point.}
 }
 \value{
-Random generated sample.
+A vector of size \code{n} containing realisations of a itnb distribution.
 }
 \description{
-Generates random numbers from a i-inflated t-truncated negative binomial distribution.
+Generates \code{n} random numbers from a i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 }
