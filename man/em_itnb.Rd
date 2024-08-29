@@ -2,9 +2,12 @@
 % Please edit documentation in R/em-itnb.R
 \name{em_itnb}
 \alias{em_itnb}
+\alias{em_itnb.numeric}
 \title{itnb parameter optimisation}
 \usage{
 em_itnb(x, i, t, control = list())
+
+\method{em_itnb}{numeric}(x, i, t, control = list())
 }
 \arguments{
 \item{x}{Vector: Observed counts.}

@@ -15,6 +15,6 @@ An itnb-object is a list containing the following:
     \item{\code{p}}{Numeric: The inflation proportion.}
     \item{\code{log_likelihood}}{Numeric: The complete log-likelihood of the optimised parameters.}
     \item{\code{converged}}{TRUE/FALSE: Did the EM-algorithm converge?}
-    \item{\code{trace}}{A \link{data.frame} of the trace, if the argument \code{save_trace} in \link{em_itnb_control} was \code{TRUE}, otherwise it is \code{NA}.}
+    \item{\code{trace}}{A \link{data.frame} of the trace, if the argument \code{save_trace} in \link{em_itnb_control} was \code{TRUE}, otherwise it is \code{NULL}.}
 }
 }

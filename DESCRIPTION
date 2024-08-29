@@ -1,14 +1,16 @@
 Package: itnb
 Type: Package
 Title: I-Inlfated T-Truncated Negative Binomial Distribution
-Version: 0.1
-Date: 2020-12-20
-Encoding: UTF-8
-Author: Søren B. Vilsen
-Maintainer: Søren B. Vilsen <svilsen@math.aau.dk>
-Description: Very simple models for handling inflated and truncated over-dispersed count data.
+Version: 0.2
+Date: 2024-08-29
+Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@math.aau.dk") 
+Description: An inflated and truncated negative binomial distribution parameterised using mean and overdispersion, with parameter estimation by the EM-algorithm, and confidence envelopes by both parametric and non-parametric bootstrap.
 License: MIT + file LICENSE
 Imports:
     stats,
-    progress
+    progress,
+    graphics
+Encoding: UTF-8
 RoxygenNote: 7.3.1
+Depends: 
+    R (>= 4.1.0)

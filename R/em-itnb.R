@@ -1,5 +1,5 @@
 ## The complete and the restricted log-likelihoods
-.complete_log_likelihood <- function (mu, theta, p, x, z, i, x_i, t) {
+complete_log_likelihood <- function (mu, theta, p, x, z, i, x_i, t) {
     log_density <- ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = TRUE)
 
     if (p == 0) {
@@ -12,7 +12,7 @@
     return(sum(res))
 }
 
-.restricted_log_likelihood <- function(pars, x, p, i, t) {
+restricted_log_likelihood <- function(pars, x, p, i, t) {
     mu <- pars[1]
     theta <- pars[2]
 
@@ -79,9 +79,19 @@ em_itnb_control <- function(trace = 0L, tolerance = 1e-6, iteration_min = 5L, it
 #' @param control List: A control object, see \link{em_itnb_control} for details.
 #'
 #' @return An object of class \link{itnb-object}.
-#' @example inst/examples/em_itnb_example.R
+#'
 #' @export
 em_itnb <- function(x, i, t, control = list()) {
+    UseMethod("em_itnb")
+}
+
+#' @rdname em_itnb
+#' @method em_itnb numeric
+#'
+#' @example inst/examples/em_itnb_example.R
+#'
+#' @export
+em_itnb.numeric <- function(x, i, t, control = list()) {
     control <- do.call(em_itnb_control, control)
 
     if (!is.numeric(i)) {
@@ -103,7 +113,7 @@ em_itnb <- function(x, i, t, control = list()) {
     z_star <- (p * as.numeric(x_i)) /
         (p * as.numeric(x_i) + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
 
-    complete_log_likelihood <- .complete_log_likelihood(
+    complete_log_likelihood <- complete_log_likelihood(
         mu = mu, theta = theta, p = p, x = x,
         z = z_star, i = i, x_i = x_i, t = t
     )
@@ -137,7 +147,7 @@ em_itnb <- function(x, i, t, control = list()) {
 
         pars <- optim(
             par = c(mu, theta),
-            fn = .restricted_log_likelihood,
+            fn = restricted_log_likelihood,
             x = x,
             p = p,
             i = i,
@@ -153,7 +163,7 @@ em_itnb <- function(x, i, t, control = list()) {
 
         ## Updating convergence results
         complete_log_likelihood_old <- complete_log_likelihood
-        complete_log_likelihood <- .complete_log_likelihood(mu = mu, theta = theta, p = p, x = x, z = z_star, i = i, x_i = x_i, t = t)
+        complete_log_likelihood <- complete_log_likelihood(mu = mu, theta = theta, p = p, x = x, z = z_star, i = i, x_i = x_i, t = t)
         change_log_likelihood <- abs(complete_log_likelihood - complete_log_likelihood_old)
 
         not_converged <- ifelse(j < control$iteration_min, TRUE, (change_log_likelihood > control$tolerance) && (j < control$iteration_max))
@@ -186,6 +196,7 @@ em_itnb <- function(x, i, t, control = list()) {
 
     res <- list(
         n = length(x),
+        x = x,
         i = i,
         t = t,
         mu = mu,
@@ -204,77 +215,104 @@ em_itnb <- function(x, i, t, control = list()) {
 #'
 #' @description Simulated confidence envelopes of the parameters estimated by the \link{em_itnb} function.
 #'
-#' @param itnb_object An \link{itnb-object}.
+#' @param object An \link{itnb-object}.
 #' @param level Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
-#' @param trace TRUE/FALSE, should a trace be shown?
-#' @param number_of_simulations Integer: The number of simulations used to create the confidence envelopes.
-#' @param plot_simulations TRUE/FALSE, should a density plot of the parameters be returned?
+#' @param trace TRUE/FALSE: should a trace be shown?
+#' @param nr_simulations Numeric: The number of simulations used to create the confidence envelopes.
+#' @param parametric TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?
+#' @param plot TRUE/FALSE: should a density plot of the parameters be returned?
 #'
-#' @return A matrix with parametric bootstrap simulations (if \code{level = NULL}), or a matrix lower and upper confidence limits for each parameter. These will be labelled as (1-level)/2 and 1 - (1-level)/2 in % (by default 2.5% and 97.5%).
-#' @example inst/examples/simulation_itnb_example.R
+#' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
+#'
 #' @export
-simulate_confidence_envelopes <- function(itnb_object, level = 0.95, trace = TRUE, number_of_simulations = 100, plot_simulations = FALSE) {
-    n <- itnb_object$n
-    i <- itnb_object$i
-    t <- itnb_object$t
+simulate_ci <- function(object, level = 0.95, trace = TRUE, nr_simulations = 2000, parametric = FALSE, plot = FALSE) {
+    UseMethod("simulate_ci")
+}
 
-    mu <- itnb_object$mu
-    theta <- itnb_object$theta
-    p <- itnb_object$p
+#' @rdname simulate_ci
+#' @method simulate_ci itnb
+#'
+#' @example inst/examples/simulation_itnb_example.R
+#'
+#' @export
+simulate_ci.itnb <- function(object, level = 0.95, trace = TRUE, nr_simulations = 2000, parametric = FALSE, plot = FALSE) {
+    ##
+    n <- object$n
+    x <- object$x
+    i <- object$i
+    t <- object$t
 
-    envelope_mu <- rep(NA, number_of_simulations)
-    envelope_theta <- rep(NA, number_of_simulations)
-    envelope_p <- rep(NA, number_of_simulations)
+    ##
+    mu <- object$mu
+    theta <- object$theta
+    p <- object$p
+
+    ##
+    mu_e <- rep(NA, nr_simulations)
+    theta_e <- rep(NA, nr_simulations)
+    p_e <- rep(NA, nr_simulations)
 
     if (trace) {
         pb <- progress_bar$new(
-            format = paste0("Simulating confidence envelopes (size ", number_of_simulations, ")", ": [:bar] :percent Eta: :eta"),
-            total = number_of_simulations,
+            format = paste0(ifelse(parametric, "Parametric", "Non-parametric"), " bootstrap (samples = ", nr_simulations, ")", ": [:bar] :percent Eta: :eta"),
+            total = nr_simulations,
             clear = FALSE,
             width = 120
         )
     }
 
-    for (j in 1:number_of_simulations) {
+    for (j in seq_len(nr_simulations)) {
         if (trace)
             pb$tick()
 
-        simulation_j <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
-        optimised_simulation_j <- em_itnb(x = simulation_j, i = i, t = t)
+        if (parametric) {
+            x_j <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+        }
+        else {
+            x_j <- x[sample(n, n, replace = TRUE)]
+        }
 
-        envelope_mu[j] <- optimised_simulation_j$mu
-        envelope_theta[j] <- optimised_simulation_j$theta
-        envelope_p[j] <- optimised_simulation_j$p
-    }
+        pars_j <- em_itnb(x = x_j, i = i, t = t)
 
-    if (plot_simulations) {
-        par(mfrow = c(3, 1))
-        hist(envelope_mu, breaks = "fd", xlab = bquote(mu), ylab = "Density", probability = TRUE, main = "")
-
-        hist(envelope_theta, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE)
-
-        hist(envelope_p, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE)
-        par(mfrow = c(1, 1))
+        mu_e[j] <- pars_j$mu
+        theta_e[j] <- pars_j$theta
+        p_e[j] <- pars_j$p
     }
 
     if (is.null(level)) {
-        complete_data_frame <- cbind(envelope_mu, envelope_theta, envelope_p)
+        complete_data_frame <- cbind(mu_e, theta_e, p_e)
         colnames(complete_data_frame) <- c("mu", "theta", "p")
 
-        return(complete_data_frame)
+        res_data_frame <- complete_data_frame
     }
     else {
         alpha <- (1 - level) / 2
 
-        quantiles_mu <- quantile(envelope_mu, probs = c(alpha, 1 - alpha))
-        quantiles_theta <- quantile(envelope_theta, probs = c(alpha, 1 - alpha))
-        quantiles_p <- quantile(envelope_p, probs = c(alpha, 1 - alpha))
+        quantiles_mu <- quantile(mu_e, probs = c(alpha, 1 - alpha))
+        quantiles_theta <- quantile(theta_e, probs = c(alpha, 1 - alpha))
+        quantiles_p <- quantile(p_e, probs = c(alpha, 1 - alpha))
 
         confint_data_frame <- rbind(quantiles_mu, quantiles_theta, quantiles_p)
         rownames(confint_data_frame) <- c("mu", "theta", "p")
 
-        return(confint_data_frame)
+        res_data_frame <- confint_data_frame
     }
+
+    if (plot) {
+        par(mfrow = c(3, 1))
+        hist(mu_e, breaks = "fd", xlab = bquote(mu), ylab = "Density", probability = TRUE, main = paste(ifelse(parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5);
+        if (!is.null(level)) abline(v = quantiles_mu[1], col = "dodgerblue2", lwd = 2); abline(v = quantiles_mu[2], col = "dodgerblue2", lwd = 2)
+
+        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = paste(ifelse(parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5)
+        if (!is.null(level)) abline(v = quantiles_theta[1], col = "dodgerblue2", lwd = 2); abline(v = quantiles_theta[2], col = "dodgerblue2", lwd = 2)
+
+        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5)
+        if (!is.null(level)) abline(v = quantiles_p[1], col = "dodgerblue2", lwd = 2); abline(v = quantiles_p[2], col = "dodgerblue2", lwd = 2)
+
+        par(mfrow = c(1, 1))
+    }
+
+    return(res_data_frame)
 }
 
 #' Plot parameter trace of an \link{itnb-object}

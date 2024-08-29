@@ -3,11 +3,11 @@
 
 #' @title ITNB: Inflated and truncated negative binomial distribution
 #'
-#' @author Søren B. Vilsen <svilsen@math.aau.dk>
+#' @R$authors Søren B. Vilsen <svilsen@math.aau.dk>
 #'
 #' @importFrom stats 'optim' 'pbeta' 'quantile' 'rnbinom' 'var'
 #' @importFrom progress 'progress_bar'
-#' @importFrom graphics 'par' 'hist' 'plot'
+#' @importFrom graphics 'par' 'hist' 'plot' 'abline'
 #'
 #' @name itnb-package
 #'
@@ -27,7 +27,7 @@ NULL
 #'     \item{\code{p}}{Numeric: The inflation proportion.}
 #'     \item{\code{log_likelihood}}{Numeric: The complete log-likelihood of the optimised parameters.}
 #'     \item{\code{converged}}{TRUE/FALSE: Did the EM-algorithm converge?}
-#'     \item{\code{trace}}{A \link{data.frame} of the trace, if the argument \code{save_trace} in \link{em_itnb_control} was \code{TRUE}, otherwise it is \code{NA}.}
+#'     \item{\code{trace}}{A \link{data.frame} of the trace, if the argument \code{save_trace} in \link{em_itnb_control} was \code{TRUE}, otherwise it is \code{NULL}.}
 #' }
 #'
 #' @name itnb-object

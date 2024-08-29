@@ -6,9 +6,10 @@
 \alias{itnb-package}
 \title{itnb: I-Inlfated T-Truncated Negative Binomial Distribution}
 \description{
-Very simple models for handling inflated and truncated over-dispersed count data.
+An inflated and truncated negative binomial distribution parameterised using mean and overdispersion, with parameter estimation by the EM-algorithm, and confidence envelopes by both parametric and non-parametric bootstrap.
 }
 \author{
-Søren B. Vilsen <svilsen@math.aau.dk>
+\strong{Maintainer}: Søren B. Vilsen \email{svilsen@math.aau.dk}
+
 }
 \keyword{internal}

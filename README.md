@@ -3,7 +3,7 @@ The `itnb`-package implements mean and overdispersion parameterised $i$-inflated
 
 ## Installation
 
-The `itnb`-package depends on `R` (>= 4.0). As the package is not available on CRAN, devtools is needed to install the package from github. 
+The `itnb`-package depends on `R` (>= 4.1). As the package is not available on CRAN, devtools is needed to install the package from github. 
 
 From R, run the following commands:  
 
@@ -44,12 +44,22 @@ m <- em_itnb(
 plot(m, log = "x")
 
 ##
-simulate_confidence_envelopes(
+ci_p <- simulate_ci(
     m, 
-    level = NULL, 
+    level = 0.95, 
     trace = TRUE, 
-    number_of_simulations = 100, 
-    plot_simulations = TRUE
+    nr_simulations = 25, 
+    parametric = TRUE,
+    plot = TRUE
+)
+
+ci_np <- simulate_ci(
+    m, 
+    level = 0.95, 
+    trace = TRUE, 
+    nr_simulations = 250, 
+    parametric = FALSE,
+    plot = TRUE
 )
 ```
 
