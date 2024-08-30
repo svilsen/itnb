@@ -6,7 +6,8 @@ Date: 2024-08-29
 Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@math.aau.dk") 
 Description: An inflated and truncated negative binomial distribution parameterised using mean and overdispersion, with parameter estimation by the EM-algorithm, and confidence envelopes by both parametric and non-parametric bootstrap.
 License: MIT + file LICENSE
-Imports: stats, progress, graphics
+Imports: stats, progress, graphics, Rcpp (>= 1.0.4.6)
+LinkingTo: Rcpp, roptim, BH
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Depends: R (>= 4.1.0)

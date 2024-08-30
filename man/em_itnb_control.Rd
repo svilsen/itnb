@@ -5,10 +5,10 @@
 \title{Control function for the \link{em_itnb} function.}
 \usage{
 em_itnb_control(
-  trace = 0L,
+  trace = 0,
   tolerance = 1e-06,
-  iteration_min = 5L,
-  iteration_max = 10000L,
+  iteration_min = 5,
+  iteration_max = 10000,
   save_trace = FALSE
 )
 }

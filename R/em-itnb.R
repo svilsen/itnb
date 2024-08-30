@@ -33,7 +33,7 @@ restricted_log_likelihood <- function(pars, x, p, i, t) {
 #'
 #' @return A list of default arguments for the \link{em_itnb} function.
 #' @export
-em_itnb_control <- function(trace = 0L, tolerance = 1e-6, iteration_min = 5L, iteration_max = 10000L, save_trace = FALSE) {
+em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, save_trace = FALSE) {
     if (!is.numeric(trace)) {
         stop("'trace' has to be numeric.")
     }

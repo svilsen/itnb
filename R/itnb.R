@@ -1,17 +1,3 @@
-rtnbinom = function(n, mu, theta, t) {
-    fill = rep(NA, n)
-    for(j in seq_len(n)){
-        val = t
-        while(val <= t){
-            val = rnbinom(n = 1, size = theta, mu = mu)
-        }
-
-        fill[j] = val
-    }
-
-    fill
-}
-
 #' ritnb
 #'
 #' @description Generates \code{n} random numbers from a i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
@@ -50,7 +36,12 @@ ritnb <- function(n, mu, theta, p, i, t) {
     }
     i <- ceiling(i)
 
-    if (!(is.numeric(t) || is.null(t))) {
+    ##
+    if (is.null(t)) {
+        t <- -1
+    }
+
+    if (!is.numeric(t)) {
         stop("'t' has to be numeric.")
     }
 
@@ -63,15 +54,9 @@ ritnb <- function(n, mu, theta, p, i, t) {
     }
 
     ##
-    if (is.null(t)) {
-        res <- c(rep(i, floor(n * p)), rnbinom(n = n - floor(n * p), size = theta, mu = mu))
-    }
-    else {
-        res <- c(rep(i, floor(n * p)), rtnbinom(n = n - floor(n * p), mu = mu, theta = theta, t = t))
-    }
+    res <- itnb:::ritnb_mu(n = n, mu = mu, theta = theta, p = p, i = i, t = r, seed = sample(1e6, 1))
 
     ##
-    res <- res[sample(n, n, replace = FALSE)]
     return(res)
 }
 

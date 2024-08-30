@@ -38,13 +38,19 @@ m <- em_itnb(
     i = i, 
     t = t, 
     control = em_itnb_control(
-        trace = 0L, 
+        trace = 0, 
+        iteration_min = 1000,
         save_trace = TRUE
     )
 )
 
 ## Plotting trace of EM-algorithm 
 plot(m, log = "x")
+
+## Percentage errors
+100 * (m$mu - mu) / mu
+100 * (m$theta - theta) / theta
+100 * (m$p - p) / p
 
 ## Sampling CI's
 ci_p <- simulate_ci(

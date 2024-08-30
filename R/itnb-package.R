@@ -1,10 +1,16 @@
+#' @keywords internal
+"_PACKAGE"
+
 #' @title ITNB: Inflated and truncated negative binomial distribution
 #'
 #' @author Søren B. Vilsen <svilsen@math.aau.dk>
 #'
+#' @importFrom Rcpp evalCpp
 #' @importFrom stats 'optim' 'pbeta' 'quantile' 'rnbinom' 'var'
 #' @importFrom progress 'progress_bar'
 #' @importFrom graphics 'par' 'hist' 'plot' 'abline'
+#'
+#' @useDynLib itnb
 #'
 #' @name itnb-package
 #'
