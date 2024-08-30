@@ -10,38 +10,96 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// timesTwo
-Rcpp::NumericVector timesTwo(Rcpp::NumericVector x);
-RcppExport SEXP _itnb_timesTwo(SEXP xSEXP) {
+// complete_loglikelihood
+double complete_loglikelihood(const std::vector<int>& x, const std::vector<int>& xi, const std::vector<double>& z, const std::vector<double>& mu, const std::vector<double>& theta, const std::vector<double>& p, std::vector<int>& i, std::vector<int>& t);
+RcppExport SEXP _itnb_complete_loglikelihood(SEXP xSEXP, SEXP xiSEXP, SEXP zSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type i(iSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(complete_loglikelihood(x, xi, z, mu, theta, p, i, t));
     return rcpp_result_gen;
 END_RCPP
 }
-// ritnb_mu
-std::vector<int> ritnb_mu(const int& n, const double& mu, const double& theta, const double& p, const int& i, const int& t, const int& seed);
-RcppExport SEXP _itnb_ritnb_mu(SEXP nSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP, SEXP seedSEXP) {
+// restricted_loglikelihood
+double restricted_loglikelihood(const std::vector<int>& x, const std::vector<double>& mu, const std::vector<double>& theta, const std::vector<double>& p, std::vector<int>& i, std::vector<int>& t);
+RcppExport SEXP _itnb_restricted_loglikelihood(SEXP xSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type i(iSEXP);
+    Rcpp::traits::input_parameter< std::vector<int>& >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(restricted_loglikelihood(x, mu, theta, p, i, t));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ritnb_cpp
+std::vector<int> ritnb_cpp(const int& n, const std::vector<double>& mu, const std::vector<double>& theta, const std::vector<double>& p, const std::vector<int>& i, const std::vector<int>& t, const int& seed);
+RcppExport SEXP _itnb_ritnb_cpp(SEXP nSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const int& >::type n(nSEXP);
-    Rcpp::traits::input_parameter< const double& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const double& >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< const double& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
-    Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type i(iSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type t(tSEXP);
     Rcpp::traits::input_parameter< const int& >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(ritnb_mu(n, mu, theta, p, i, t, seed));
+    rcpp_result_gen = Rcpp::wrap(ritnb_cpp(n, mu, theta, p, i, t, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ditnb_cpp
+std::vector<double> ditnb_cpp(const std::vector<int>& x, const std::vector<double>& mu, const std::vector<double>& theta, const std::vector<double>& p, const std::vector<int>& i, const std::vector<int>& t);
+RcppExport SEXP _itnb_ditnb_cpp(SEXP xSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type i(iSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(ditnb_cpp(x, mu, theta, p, i, t));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pitnb_cpp
+std::vector<double> pitnb_cpp(const std::vector<int>& x, const std::vector<double>& mu, const std::vector<double>& theta, const std::vector<double>& p, const std::vector<int>& i, const std::vector<int>& t);
+RcppExport SEXP _itnb_pitnb_cpp(SEXP xSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type i(iSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(pitnb_cpp(x, mu, theta, p, i, t));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_itnb_timesTwo", (DL_FUNC) &_itnb_timesTwo, 1},
-    {"_itnb_ritnb_mu", (DL_FUNC) &_itnb_ritnb_mu, 7},
+    {"_itnb_complete_loglikelihood", (DL_FUNC) &_itnb_complete_loglikelihood, 8},
+    {"_itnb_restricted_loglikelihood", (DL_FUNC) &_itnb_restricted_loglikelihood, 6},
+    {"_itnb_ritnb_cpp", (DL_FUNC) &_itnb_ritnb_cpp, 7},
+    {"_itnb_ditnb_cpp", (DL_FUNC) &_itnb_ditnb_cpp, 6},
+    {"_itnb_pitnb_cpp", (DL_FUNC) &_itnb_pitnb_cpp, 6},
     {NULL, NULL, 0}
 };
 

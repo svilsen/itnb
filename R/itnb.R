@@ -21,18 +21,30 @@ ritnb <- function(n, mu, theta, p, i, t) {
     if (!is.numeric(mu)) {
         stop("'mu' has to be numeric.")
     }
+    else if (!((length(mu) == n) || length(mu) == 1)) {
+        stop("'mu' needs to have length 1, or be equal to 'n'.")
+    }
 
     if (!is.numeric(theta)) {
         stop("'theta' has to be numeric.")
+    }
+    else if (!((length(theta) == n) || length(theta) == 1)) {
+        stop("'theta' needs to have length 1, or be equal to 'n'.")
     }
 
     if (!is.numeric(p)) {
         stop("'p' has to be numeric.")
     }
+    else if (!((length(p) == n) || length(p) == 1)) {
+        stop("'p' needs to have length 1, or be equal to 'n'.")
+    }
 
     ##
     if (!is.numeric(i)) {
         stop("'i' has to be numeric.")
+    }
+    else if (!((length(i) == n) || length(i) == 1)) {
+        stop("'i' needs to have length 1, or be equal to 'n'.")
     }
     i <- ceiling(i)
 
@@ -44,17 +56,19 @@ ritnb <- function(n, mu, theta, p, i, t) {
     if (!is.numeric(t)) {
         stop("'t' has to be numeric.")
     }
+    else if (!((length(t) == n) || length(t) == 1)) {
+        stop("'t' needs to have length 1, or be equal to 'n'.")
+    }
 
     if (is.numeric(t)) {
-        if (t >= i) {
+        t <- ceiling(t)
+        if (any(t >= i)) {
             stop("'t' has to be smaller than 'i'.")
         }
-
-        t <- ceiling(t)
     }
 
     ##
-    res <- itnb:::ritnb_mu(n = n, mu = mu, theta = theta, p = p, i = i, t = r, seed = sample(1e6, 1))
+    res <- ritnb_cpp(n = n, mu = mu, theta = theta, p = p, i = i, t = t, seed = sample(1e6, 1))
 
     ##
     return(res)
@@ -85,50 +99,54 @@ ditnb <- function(x, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) 
     if (!is.numeric(mu)) {
         stop("'mu' has to be numeric.")
     }
+    else if (!((length(mu) == length(x)) || length(mu) == 1)) {
+        stop("'mu' needs to have length 1, or be the same length as 'x'.")
+    }
 
     if (!is.numeric(theta)) {
         stop("'theta' has to be numeric.")
     }
+    else if (!((length(theta) == length(x)) || length(theta) == 1)) {
+        stop("'theta' needs to have length 1, or be the same length as 'x'.")
+    }
 
     if (!is.numeric(p)) {
         stop("'p' has to be numeric.")
+    }
+    else if (!((length(p) == length(x)) || length(p) == 1)) {
+        stop("'p' needs to have length 1, or be the same length as 'x'.")
     }
 
     ##
     if (!is.numeric(i)) {
         stop("'i' has to be numeric.")
     }
+    else if (!((length(i) == length(x)) || length(i) == 1)) {
+        stop("'i' needs to have length 1, or be the same length as 'x'.")
+    }
     i <- ceiling(i)
 
-    if (!(is.numeric(t) || is.null(t))) {
+    ##
+    if (is.null(t)) {
+        t <- -1
+    }
+
+    if (!is.numeric(t)) {
         stop("'t' has to be numeric.")
+    }
+    else if (!((length(t) == length(x)) || length(t) == 1)) {
+        stop("'t' needs to have length 1, or be the same length as 'x'.")
     }
 
     if (is.numeric(t)) {
-        if (t >= i) {
+        t <- ceiling(t)
+        if (any(t >= i)) {
             stop("'t' has to be smaller than 'i'.")
         }
-
-        t <- ceiling(t)
     }
 
     ##
-    log_density <- theta * (log(theta) - log(theta + mu)) +
-        lgamma(theta + x) - lgamma(theta) - lfactorial(x) +
-        x * (log(mu) - log(theta + mu))
-
-    if (!is.null(t)) {
-        t <- ceiling(t)
-        log_density <- log_density - log(pbeta(mu / (mu + theta), t + 1, theta))
-
-        x_t <- (x <= t)
-        log_density[x_t] <- -Inf
-    }
-
-    ##
-    log_res <- log(1 - p) + log_density
-    x_i <- x == i
-    log_res[x_i] <- log(p + (1 - p) * exp(log_density[x_i]))
+    log_res <- ditnb_cpp(x, mu, theta, p, i, t)
 
     ##
     res <- log_res
@@ -136,6 +154,16 @@ ditnb <- function(x, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) 
         res <- exp(log_res)
     }
 
+    if (!lower_tail) {
+        if (return_log) {
+            res <- log1p(1.0 - expm1(res))
+        }
+        else {
+            res <- 1.0 - res
+        }
+    }
+
+    ##
     return(res)
 }
 
@@ -161,54 +189,74 @@ pitnb <- function(q, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) 
     }
 
     ##
-    if (length(mu) == 1) {
-        mu_j <- mu
+    if (!is.numeric(mu)) {
+        stop("'mu' has to be numeric.")
+    }
+    else if (!((length(mu) == length(x)) || length(mu) == 1)) {
+        stop("'mu' needs to have length 1, or be the same length as 'x'.")
     }
 
-    if (length(theta) == 1) {
-        theta_j <- theta
+    if (!is.numeric(theta)) {
+        stop("'theta' has to be numeric.")
+    }
+    else if (!((length(theta) == length(x)) || length(theta) == 1)) {
+        stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
 
-    if (length(p) == 1) {
-        p_j <- p
+    if (!is.numeric(p)) {
+        stop("'p' has to be numeric.")
     }
-
-    if (length(i) == 1) {
-        i_j <- i
-    }
-
-    if (length(t) == 1) {
-        t_j <- t
+    else if (!((length(p) == length(x)) || length(p) == 1)) {
+        stop("'p' needs to have length 1, or be the same length as 'x'.")
     }
 
     ##
-    res <- rep(NA, length(q))
-    for (j in seq_along(res)) {
-        ##
-        if (length(mu) > 1) {
-            mu_j <- mu[j]
-        }
+    if (!is.numeric(i)) {
+        stop("'i' has to be numeric.")
+    }
+    else if (!((length(i) == length(x)) || length(i) == 1)) {
+        stop("'i' needs to have length 1, or be the same length as 'x'.")
+    }
+    i <- ceiling(i)
 
-        if (length(theta) > 1) {
-            theta_j <- theta[j]
-        }
-
-        if (length(p) > 1) {
-            p_j <- p[j]
-        }
-
-        if (length(i) > 1) {
-            i_j <- i[j]
-        }
-
-        if (length(t) > 1) {
-            t_j <- t[j]
-        }
-
-        ##
-        res[j] <- sum(ditnb(x = seq_len(q[j]), mu = mu_j, theta = theta_j, p = p_j, i = i_j, t = t_j, return_log = return_log))
+    ##
+    if (is.null(t)) {
+        t <- -1
     }
 
+    if (!is.numeric(t)) {
+        stop("'t' has to be numeric.")
+    }
+    else if (!((length(t) == length(x)) || length(t) == 1)) {
+        stop("'t' needs to have length 1, or be the same length as 'x'.")
+    }
+
+    if (is.numeric(t)) {
+        t <- ceiling(t)
+        if (any(t >= i)) {
+            stop("'t' has to be smaller than 'i'.")
+        }
+    }
+
+    ##
+    log_res <- pitnb_cpp(q, mu, theta, p, i, t)
+
+    ##
+    res <- log_res
+    if (!return_log) {
+        res <- exp(log_res)
+    }
+
+    if (!lower_tail) {
+        if (return_log) {
+            res <- log1p(1.0 - expm1(res))
+        }
+        else {
+            res <- 1.0 - res
+        }
+    }
+
+    ##
     return(res)
 }
 

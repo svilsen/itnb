@@ -1,24 +1,10 @@
 ## The complete and the restricted log-likelihoods
-complete_log_likelihood <- function (mu, theta, p, x, z, i, x_i, t) {
-    log_density <- ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = TRUE)
-    x_i_ind <- as.numeric(x_i)
-
-    if (p == 0) {
-        res <- (1 - z) * log_density
-    }
-    else {
-        res <- z * log(p) * x_i_ind + (1 - z) * (log(1 - p) + log_density)
-    }
-
-    return(sum(res))
-}
-
 restricted_log_likelihood <- function(pars, x, p, i, t) {
     mu <- pars[1]
     theta <- pars[2]
 
-    log_likelihood <- ditnb(x = x, mu = mu, theta = theta, p = p, i = i, t = t, return_log = TRUE)
-    return(-sum(log_likelihood))
+    log_likelihood <- restricted_loglikelihood(x = x, mu = mu, theta = theta, p = p, i = i, t = t)
+    return(-log_likelihood)
 }
 
 #' Control function for the \link{em_itnb} function.
@@ -93,37 +79,60 @@ em_itnb <- function(x, i, t, control = list()) {
 #'
 #' @export
 em_itnb.numeric <- function(x, i, t, control = list()) {
+    ##
     control <- do.call(em_itnb_control, control)
 
+    ##
     if (!is.numeric(i)) {
         stop("'i' has to be numeric.")
     }
+    else if (!((length(i) == n) || length(i) == 1)) {
+        stop("'i' needs to have length 1, or be equal to 'n'.")
+    }
     i <- ceiling(i)
+
+    ##
+    if (is.null(t)) {
+        t <- -1
+    }
 
     if (!is.numeric(t)) {
         stop("'t' has to be numeric.")
     }
-    t <- ceiling(t)
+    else if (!((length(t) == n) || length(t) == 1)) {
+        stop("'t' needs to have length 1, or be equal to 'n'.")
+    }
 
-    x_i <- x == i
-    x_i_ind <- as.numeric(x_i)
+    if (is.numeric(t)) {
+        t <- ceiling(t)
+        if (any(t >= i)) {
+            stop("'t' has to be smaller than 'i'.")
+        }
+    }
 
+    ##
+    x_i <- as.numeric(x == i)
+
+    ##
     p <- mean(x_i)
-    mu <- mean(x[!x_i])
-    var_x <- var(x[!x_i])
+    mu <- mean(x[x_i == 0])
 
+    var_x <- var(x[x_i == 0])
     theta <- ifelse(var_x > mu, mu^2 / (var_x - mu), 100)
-    z_star <- (p * x_i_ind) /
-        (p * x_i_ind + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
 
-    c_log_likelihood <- complete_log_likelihood(
-        mu = mu, theta = theta, p = p, x = x,
-        z = z_star, i = i, x_i = x_i, t = t
+    ##
+    z_star <- (p * x_i) /
+        (p * x_i + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
+
+    c_log_likelihood <- complete_loglikelihood(
+        x = x, xi = x_i, z = z_star,
+        mu = mu, theta = theta, p = p,
+        i = i, t = t
     )
 
     not_converged <- TRUE
     if (control$trace > 0) {
-        cat("Iteration :", 0, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", NA, "\n")
+        cat("Iteration :", 0, "\t Current log-likelihood:", c_log_likelihood, "\t Absolute change in log-likelihood:", NA, "\n")
         cat("\t Parameters (Initial): ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
     }
 
@@ -142,11 +151,11 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
     j = 1
     while (not_converged) {
         ## E-step
-        z_star <- (p * x_i_ind) /
-            (p * x_i_ind + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
+        z_star <- (p * x_i) /
+            (p * x_i + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
 
         ## M-step
-        p <- sum(z_star * x_i_ind) / sum(1 - z_star * (1 - x_i_ind))
+        p <- sum(z_star * x_i) / sum(1 - z_star * (1 - x_i))
 
         pars <- optim(
             par = c(mu, theta),
@@ -166,14 +175,19 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
 
         ## Updating convergence results
         c_log_likelihood_old <- c_log_likelihood
-        c_log_likelihood <- complete_log_likelihood(mu = mu, theta = theta, p = p, x = x, z = z_star, i = i, x_i = x_i, t = t)
+        c_log_likelihood <- complete_loglikelihood(
+            x = x, xi = x_i, z = z_star,
+            mu = mu, theta = theta, p = p,
+            i = i, t = t
+        )
+
         change_log_likelihood <- abs(c_log_likelihood - c_log_likelihood_old)
 
         not_converged <- ifelse(j < control$iteration_min, TRUE, (change_log_likelihood > control$tolerance) && (j < control$iteration_max))
 
         ## Tracing
         if ((control$trace > 0) & (((j %% control$trace) == 0) || (!not_converged))) {
-            cat("Iteration :", j, "\t Current log-likelihood:", complete_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
+            cat("Iteration :", j, "\t Current log-likelihood:", c_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
             cat("\t Parameters: ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
         }
 
