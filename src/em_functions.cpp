@@ -1,10 +1,16 @@
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
+#include <roptim.h>
+// [[Rcpp::depends(roptim)]]
 
 #include "rdp_functions.hpp"
 
+using namespace roptim;
+
 ////
 // [[Rcpp::export]]
-double complete_loglikelihood(const std::vector<int> & x, const std::vector<int> & xi, const std::vector<double> & z, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, std::vector<int> & i, std::vector<int> & t) {
+double complete_loglikelihood(const arma::vec & x, const arma::vec & xi, const arma::vec & z, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t) {
     //
     const int & N_x = x.size();
 
@@ -57,7 +63,7 @@ double complete_loglikelihood(const std::vector<int> & x, const std::vector<int>
 }
 
 // [[Rcpp::export]]
-double restricted_loglikelihood(const std::vector<int> & x, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, std::vector<int> & i, std::vector<int> & t) {
+double restricted_loglikelihood(const arma::vec & x, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t) {
     //
     const int & N_x = x.size();
 
@@ -102,7 +108,7 @@ double restricted_loglikelihood(const std::vector<int> & x, const std::vector<do
 }
 
 ////
-std::vector<double> update_z(const std::vector<int> & x, const std::vector<int> & xi, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, std::vector<int> & i, std::vector<int> & t) {
+arma::vec update_z(const arma::vec & x, const arma::vec & xi, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t) {
     //
     const int & N_x = x.size();
 
@@ -122,7 +128,7 @@ std::vector<double> update_z(const std::vector<int> & x, const std::vector<int> 
     int t_n = t[0];
 
     //
-    std::vector<double> z(N_x);
+    arma::vec z(N_x);
     for (int n = 0; n < N_x; n++) {
         if (N_mu > 1) {
             mu_n = mu[n];
@@ -147,12 +153,50 @@ std::vector<double> update_z(const std::vector<int> & x, const std::vector<int> 
     return z;
 }
 
+class MSTEP : public Functor {
+public:
+    MSTEP(const arma::vec & x_, const arma::vec & xi_, const arma::vec & p_, const arma::vec & i_, const arma::vec & t_, const int & N_mu_, const int & N_theta_) : x(x_), xi(xi_), p(p_), i(i_), t(t_) {
+
+    }
+
+    double operator()(const arma::vec &x) override {
+        return 0.0;
+    }
+
+    void Gradient(const arma::vec & x, arma::vec & gr) override {
+
+    }
+
+private:
+    arma::vec x;
+    arma::vec xi;
+    arma::vec p;
+    arma::vec i;
+    arma::vec t;
+
+    int N_mu;
+    int N_theta;
+};
+
+
 ////
 // [[Rcpp::export]]
-Rcpp::List em_itnb(const std::vector<int> & x, const std::vector<int> & xi, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, std::vector<int> & i, std::vector<int> & t) {
+Rcpp::List em_itnb(const arma::vec & x, const arma::vec & xi, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t) {
 
-    std::vector<double> z_star = update_z(x, xi, mu, theta, p, i, t);
+    //
+    arma::vec z_star = update_z(x, xi, mu, theta, p, i, t);
     double c_log_likelihood = complete_loglikelihood(x, xi, z_star, mu, theta, p, i, t);
+
+    //
+    MSTEP restricted(x, xi, p, i, t, mu.size(), theta.size());
+    Roptim<MSTEP> opt("L-BFGS-B");
+
+    arma::vec pars = arma::join_cols(mu, theta);
+    arma::vec lb = 1e-8 * arma::ones(pars.size());
+
+    opt.set_lower(lb);
+    opt.set_hessian(true);
+    opt.minimize(restricted, pars);
 
     return Rcpp::List::create(
         Rcpp::Named("LogLikelihood") = 0.0,

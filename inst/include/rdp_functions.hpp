@@ -1,16 +1,16 @@
 #ifndef rdp_functions
 #define rdp_functions
 
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 
 //
-std::vector<int> ritnb_cpp(const int & n, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, const std::vector<int> & i, const std::vector<int> & t, const int & seed);
+arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t, const int & seed);
 
 //
 double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t);
-std::vector<double> ditnb_cpp(const std::vector<int> & x, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, const std::vector<int> & i, const std::vector<int> & t);
+arma::vec ditnb_cpp(const arma::vec & x, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t);
 
 //
-std::vector<double> pitnb_cpp(const std::vector<int> & x, const std::vector<double> & mu, const std::vector<double> & theta, const std::vector<double> & p, const std::vector<int> & i, const std::vector<int> & t);
+arma::vec pitnb_cpp(const arma::vec & x, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t);
 
 #endif //rdp_functions

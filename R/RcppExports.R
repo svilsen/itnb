@@ -9,6 +9,10 @@ restricted_loglikelihood <- function(x, mu, theta, p, i, t) {
     .Call('_itnb_restricted_loglikelihood', PACKAGE = 'itnb', x, mu, theta, p, i, t)
 }
 
+em_itnb <- function(x, xi, mu, theta, p, i, t) {
+    .Call('_itnb_em_itnb', PACKAGE = 'itnb', x, xi, mu, theta, p, i, t)
+}
+
 ritnb_cpp <- function(n, mu, theta, p, i, t, seed) {
     .Call('_itnb_ritnb_cpp', PACKAGE = 'itnb', n, mu, theta, p, i, t, seed)
 }
