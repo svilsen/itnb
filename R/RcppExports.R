@@ -9,8 +9,8 @@ restricted_loglikelihood <- function(x, mu, theta, p, i, t) {
     .Call('_itnb_restricted_loglikelihood', PACKAGE = 'itnb', x, mu, theta, p, i, t)
 }
 
-em_itnb <- function(x, xi, mu, theta, p, i, t) {
-    .Call('_itnb_em_itnb', PACKAGE = 'itnb', x, xi, mu, theta, p, i, t)
+em_itnb <- function(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace) {
+    .Call('_itnb_em_itnb', PACKAGE = 'itnb', x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace)
 }
 
 ritnb_cpp <- function(n, mu, theta, p, i, t, seed) {

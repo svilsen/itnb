@@ -71,7 +71,7 @@ ritnb <- function(n, mu, theta, p, i, t) {
     res <- ritnb_cpp(n = n, mu = mu, theta = theta, p = p, i = i, t = t, seed = sample(1e6, 1))
 
     ##
-    return(res)
+    return(res[, 1])
 }
 
 #' ditnb
@@ -149,7 +149,7 @@ ditnb <- function(x, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) 
     log_res <- ditnb_cpp(x, mu, theta, p, i, t)
 
     ##
-    res <- log_res
+    res <- log_res[, 1]
     if (!return_log) {
         res <- exp(log_res)
     }
@@ -242,7 +242,7 @@ pitnb <- function(q, mu, theta, p, i, t, lower_tail = TRUE, return_log = FALSE) 
     log_res <- pitnb_cpp(q, mu, theta, p, i, t)
 
     ##
-    res <- log_res
+    res <- log_res[, 1]
     if (!return_log) {
         res <- exp(log_res)
     }
