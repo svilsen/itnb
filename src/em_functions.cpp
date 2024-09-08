@@ -4,6 +4,10 @@
 #include <roptim.h>
 // [[Rcpp::depends(roptim)]]
 
+#include "boost/math/special_functions/beta.hpp"
+#include "boost/math/special_functions/digamma.hpp"
+// [[Rcpp::depends(BH)]]
+
 #include "rdp_functions.hpp"
 
 using namespace roptim;
@@ -64,34 +68,100 @@ double update_p(const arma::vec & xi, const arma::vec & z_star) {
     return 0.0;
 }
 
+//[[Rcpp::export]]
+double theta_trapz(const double & a, const double & b, const double & theta, const int & t, const int & N) {
+    //
+    const double b_rev = 1.0 - b;
+    const double theta_1 = theta - 1.0;
+
+    //
+    const double delta_x = (b - a) / N;
+    double i = 0.5 * (std::pow(b, t) * std::pow(b_rev, theta_1) * std::log(b_rev));
+    for (int n = 1; n < N; n++) {
+        //
+        const double x_n = a + n * delta_x;
+        const double x_n_rev = 1.0 - x_n;
+
+        //
+        i += (std::pow(x_n, t) * std::pow(x_n_rev, theta_1) * std::log(x_n_rev));
+    }
+
+    //
+    i *= delta_x;
+    return i;
+}
+
 class RL : public Functor {
 public:
     // Parameters
     double p_;
+    arma::vec z_;
 
     // Constructor
-    RL(const arma::vec & x, const arma::vec & xi, const double & p, const int & i, const int & t) : p_(p), x_(x), xi_(xi), i_(i), t_(t) {
-
-    }
+    RL(const arma::vec & x, const arma::vec & xi, const arma::vec & z, const double & p, const int & i, const int & t) : p_(p), z_(z), x_(x), xi_(xi), N_(x_.size()), i_(i), t_(t) { }
 
     // Functor / objective function
     double operator()(const arma::vec & x) override {
         double mu_ = x[0];
-        double theta_ = x[0];
+        double theta_ = x[1];
 
-        double rl = restricted_loglikelihood(x_, mu_, theta_, p_, i_, t_);
-        return -rl;
+        //
+        double d = 0.0;
+        for (int n = 0; n < N_; n++) {
+            d += (1 - z_[n]) * ditnb_cpp(x_[n], mu_, theta_, p_, i_, t_);
+        }
+
+        //
+        return -d;
     }
 
     // Gradient function
     void Gradient(const arma::vec & x, arma::vec & gr) override {
+        //
+        const double & mu_ = x[0];
+        const double & theta_ = x[1];
 
+        //
+        const double & t_p_t_ = std::pow(theta_, theta_);
+
+        //
+        gr[0] = 0.0;
+        gr[1] = 0.0;
+        for (int n = 0; n < N_; n++) {
+            ////
+            const double & mt_ = mu_ + theta_;
+            const double & mti_ = 1.0 / mt_;
+            const double & xt_ = x_[n] + theta_;
+
+            //// Mean parameters
+            // Derivatives of the regularised beta function
+            const double & b_mu_n = std::pow(mu_, t_) * t_p_t_ / std::pow(mt_, t_ + 1 + theta_);
+            const double & b_mu_d = boost::math::beta(t_ + 1, theta_, mu_ * mti_);
+            const double & I_mu_ = b_mu_n / b_mu_d;
+
+            // Gradient update
+            gr[0] -= (1 - z_[n]) * (x_[n] / mu_ - xt_ * mti_ - I_mu_);
+
+            //// Overdispersion parameter
+            // Derivatives of the regularised beta function
+            const double & b_t_f = b_mu_n * mu_ / theta_;
+
+            const double & b_t_i = theta_trapz(0.0, mu_ * mti_, theta_, t_, 1000);
+
+            const double & b_t_d = boost::math::digamma(t_ + 1 + theta_) - boost::math::digamma(theta_);
+            const double & I_t_ = -b_t_f + b_t_i + b_t_d;
+
+            // Gradient update
+            gr[1] -= (1 - z_[n]) * (1 + std::log(theta_) - xt_ * mti_ + boost::math::digamma(xt_) - boost::math::digamma(theta_) - I_t_);
+        }
     }
 
 private:
     // Data
     arma::vec x_;
     arma::vec xi_;
+
+    int N_;
 
     // Parameters
     int i_;
@@ -116,7 +186,7 @@ Rcpp::List em_itnb(
 
     //
     Roptim<RL> opt("L-BFGS-B");
-    RL r_log_likelihood(x, xi, p_0, i, t);
+    RL r_log_likelihood(x, xi, z_star, p_0, i, t);
 
     arma::vec pars_j = {mu_0, theta_0};
     arma::vec lb = 1e-8 * arma::ones(pars_j.size());
@@ -151,6 +221,7 @@ Rcpp::List em_itnb(
         // Inflation proportion
         p_j = update_p(xi, z_star);
         r_log_likelihood.p_ = p_j;
+        r_log_likelihood.z_ = z_star;
 
         // NB parameters
         pars_j = {mu_j, theta_j};
@@ -196,27 +267,23 @@ Rcpp::List em_itnb(
     }
 
     //
-    Rcpp::List res;
+    Rcpp::List trace_list;
     if (save_trace) {
-        res = Rcpp::List::create(
+        trace_list = Rcpp::List::create(
             Rcpp::Named("LogLikelihood") = loglike_trace,
             Rcpp::Named("mu") = mu_trace,
             Rcpp::Named("theta") = theta_trace,
-            Rcpp::Named("p") = p_trace,
-            Rcpp::Named("Converged") = !not_converged,
-            Rcpp::Named("Flag") = convergence_flag
-        );
-    }
-    else {
-        res = Rcpp::List::create(
-            Rcpp::Named("LogLikelihood") = c_log_likelihood,
-            Rcpp::Named("mu") = mu_j,
-            Rcpp::Named("theta") = theta_j,
-            Rcpp::Named("p") = p_j,
-            Rcpp::Named("Converged") = !not_converged,
-            Rcpp::Named("Flag") = convergence_flag
+            Rcpp::Named("p") = p_trace
         );
     }
 
-    return res;
+    return Rcpp::List::create(
+        Rcpp::Named("LogLikelihood") = c_log_likelihood,
+        Rcpp::Named("mu") = mu_j,
+        Rcpp::Named("theta") = theta_j,
+        Rcpp::Named("p") = p_j,
+        Rcpp::Named("trace") = trace_list,
+        Rcpp::Named("Converged") = !not_converged,
+        Rcpp::Named("Flag") = convergence_flag
+    );
 }

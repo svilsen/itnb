@@ -56,7 +56,7 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
 
     //
     boost::random::uniform_01<> uniform_01;
-    boost::random::uniform_int_distribution uniform(1, 100000);
+    boost::random::uniform_int_distribution uniform(1, 10000);
 
     //
     const int & N_mu = mu.size();
