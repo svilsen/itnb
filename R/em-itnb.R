@@ -1,9 +1,9 @@
 ## The complete and the restricted log-likelihoods
-restricted_log_likelihood <- function(pars, x, p, i, t) {
+restricted_log_likelihood <- function(pars, x, z, p, i, t) {
     mu <- pars[1]
     theta <- pars[2]
 
-    log_likelihood <- restricted_loglikelihood(x = x, mu = mu, theta = theta, p = p, i = i, t = t)
+    log_likelihood <- restricted_loglikelihood(x = x, z = z, mu = mu, theta = theta, p = p, i = i, t = t)
     return(-log_likelihood)
 }
 
@@ -161,6 +161,7 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
             par = c(mu, theta),
             fn = restricted_log_likelihood,
             x = x,
+            z = z_star,
             p = p,
             i = i,
             t = t,
@@ -227,6 +228,66 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
     class(res) <- "itnb"
     return(res)
 }
+
+#' @export
+em_itnb_wrapper <- function(x, i, t, control = list()) {
+    ##
+    control <- do.call(em_itnb_control, control)
+
+    ##
+    if (!is.numeric(i)) {
+        stop("'i' has to be numeric.")
+    }
+    else if (!((length(i) == n) || length(i) == 1)) {
+        stop("'i' needs to have length 1, or be equal to 'n'.")
+    }
+    i <- ceiling(i)
+
+    ##
+    if (is.null(t)) {
+        t <- -1
+    }
+
+    if (!is.numeric(t)) {
+        stop("'t' has to be numeric.")
+    }
+    else if (!((length(t) == n) || length(t) == 1)) {
+        stop("'t' needs to have length 1, or be equal to 'n'.")
+    }
+
+    if (is.numeric(t)) {
+        t <- ceiling(t)
+        if (any(t >= i)) {
+            stop("'t' has to be smaller than 'i'.")
+        }
+    }
+
+    ##
+    x_i <- as.numeric(x == i)
+
+    ##
+    p <- mean(x_i)
+    mu <- mean(x[x_i == 0])
+
+    var_x <- var(x[x_i == 0])
+    theta <- ifelse(var_x > mu, mu^2 / (var_x - mu), 100)
+
+    res <- em_itnb_cpp(
+        x = x, xi = x_i,
+        mu_0 = mu, theta_0 = theta, p_0 = p,
+        i = i, t = t,
+        iteration_min = control$iteration_min, iteration_max = control$iteration_max, tolerance = control$tolerance,
+        trace = control$trace, save_trace = control$save_trace
+    )
+
+    if (control$save_trace) {
+        res$trace <- do.call("rbind", res$trace) |> t() |> as.data.frame()
+    }
+
+    return(res)
+}
+
+
 
 #' Confidence envelopes of itnb-object.
 #'

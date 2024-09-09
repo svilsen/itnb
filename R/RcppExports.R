@@ -5,16 +5,16 @@ complete_loglikelihood <- function(x, xi, z, mu, theta, p, i, t) {
     .Call('_itnb_complete_loglikelihood', PACKAGE = 'itnb', x, xi, z, mu, theta, p, i, t)
 }
 
-restricted_loglikelihood <- function(x, mu, theta, p, i, t) {
-    .Call('_itnb_restricted_loglikelihood', PACKAGE = 'itnb', x, mu, theta, p, i, t)
+restricted_loglikelihood <- function(x, z, mu, theta, p, i, t) {
+    .Call('_itnb_restricted_loglikelihood', PACKAGE = 'itnb', x, z, mu, theta, p, i, t)
 }
 
-theta_trapz <- function(a, b, theta_, t_, N) {
-    .Call('_itnb_theta_trapz', PACKAGE = 'itnb', a, b, theta_, t_, N)
+theta_trapz <- function(a, b, theta, t, N) {
+    .Call('_itnb_theta_trapz', PACKAGE = 'itnb', a, b, theta, t, N)
 }
 
-em_itnb <- function(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace) {
-    .Call('_itnb_em_itnb', PACKAGE = 'itnb', x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace)
+em_itnb_cpp <- function(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace) {
+    .Call('_itnb_em_itnb_cpp', PACKAGE = 'itnb', x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace)
 }
 
 ritnb_cpp <- function(n, mu, theta, p, i, t, seed) {

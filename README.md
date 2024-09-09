@@ -29,20 +29,11 @@ p <- 0.2
 x <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
 
 ## Plotting sample
-mids <- hist(x, breaks = seq(min(x), max(x)), plot = FALSE)$mids
-hist(x, breaks = seq(min(x), max(x)), probability = TRUE); points(mids, ditnb(mids, mu, theta, p, i, t), type = "l", lwd = 2, col = "dodgerblue2")
+mids <- hist(x, breaks = seq(min(x) - 10, max(x)), plot = FALSE)$mids
+hist(x, breaks = seq(min(x), max(x)), probability = TRUE, ylim = c(0.0, 0.25)); points(mids, ditnb(mids, mu, theta, p, i, t), type = "l", lwd = 2, col = "dodgerblue2")
 
 ## Estimating parameters
-m <- em_itnb(
-    x = x, 
-    i = i, 
-    t = t, 
-    control = em_itnb_control(
-        trace = 0, 
-        iteration_min = 1000,
-        save_trace = TRUE
-    )
-)
+
 
 ## Plotting trace of EM-algorithm 
 plot(m, log = "x")

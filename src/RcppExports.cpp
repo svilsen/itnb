@@ -30,39 +30,40 @@ BEGIN_RCPP
 END_RCPP
 }
 // restricted_loglikelihood
-double restricted_loglikelihood(const arma::vec& x, const double& mu, const double& theta, const double& p, const int& i, const int& t);
-RcppExport SEXP _itnb_restricted_loglikelihood(SEXP xSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
+double restricted_loglikelihood(const arma::vec& x, const arma::vec& z, const double& mu, const double& theta, const double& p, const int& i, const int& t);
+RcppExport SEXP _itnb_restricted_loglikelihood(SEXP xSEXP, SEXP zSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type z(zSEXP);
     Rcpp::traits::input_parameter< const double& >::type mu(muSEXP);
     Rcpp::traits::input_parameter< const double& >::type theta(thetaSEXP);
     Rcpp::traits::input_parameter< const double& >::type p(pSEXP);
     Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
     Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(restricted_loglikelihood(x, mu, theta, p, i, t));
+    rcpp_result_gen = Rcpp::wrap(restricted_loglikelihood(x, z, mu, theta, p, i, t));
     return rcpp_result_gen;
 END_RCPP
 }
 // theta_trapz
-double theta_trapz(const double& a, const double& b, const double& theta_, const int& t_, const int& N);
-RcppExport SEXP _itnb_theta_trapz(SEXP aSEXP, SEXP bSEXP, SEXP theta_SEXP, SEXP t_SEXP, SEXP NSEXP) {
+double theta_trapz(const double& a, const double& b, const double& theta, const int& t, const int& N);
+RcppExport SEXP _itnb_theta_trapz(SEXP aSEXP, SEXP bSEXP, SEXP thetaSEXP, SEXP tSEXP, SEXP NSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
     Rcpp::traits::input_parameter< const double& >::type b(bSEXP);
-    Rcpp::traits::input_parameter< const double& >::type theta_(theta_SEXP);
-    Rcpp::traits::input_parameter< const int& >::type t_(t_SEXP);
+    Rcpp::traits::input_parameter< const double& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
     Rcpp::traits::input_parameter< const int& >::type N(NSEXP);
-    rcpp_result_gen = Rcpp::wrap(theta_trapz(a, b, theta_, t_, N));
+    rcpp_result_gen = Rcpp::wrap(theta_trapz(a, b, theta, t, N));
     return rcpp_result_gen;
 END_RCPP
 }
-// em_itnb
-Rcpp::List em_itnb(const arma::vec& x, const arma::vec& xi, const double& mu_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const int& trace, const bool& save_trace);
-RcppExport SEXP _itnb_em_itnb(SEXP xSEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
+// em_itnb_cpp
+Rcpp::List em_itnb_cpp(const arma::vec& x, const arma::vec& xi, const double& mu_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const int& trace, const bool& save_trace);
+RcppExport SEXP _itnb_em_itnb_cpp(SEXP xSEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -78,7 +79,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< const int& >::type trace(traceSEXP);
     Rcpp::traits::input_parameter< const bool& >::type save_trace(save_traceSEXP);
-    rcpp_result_gen = Rcpp::wrap(em_itnb(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace));
+    rcpp_result_gen = Rcpp::wrap(em_itnb_cpp(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -134,9 +135,9 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_itnb_complete_loglikelihood", (DL_FUNC) &_itnb_complete_loglikelihood, 8},
-    {"_itnb_restricted_loglikelihood", (DL_FUNC) &_itnb_restricted_loglikelihood, 6},
+    {"_itnb_restricted_loglikelihood", (DL_FUNC) &_itnb_restricted_loglikelihood, 7},
     {"_itnb_theta_trapz", (DL_FUNC) &_itnb_theta_trapz, 5},
-    {"_itnb_em_itnb", (DL_FUNC) &_itnb_em_itnb, 12},
+    {"_itnb_em_itnb_cpp", (DL_FUNC) &_itnb_em_itnb_cpp, 12},
     {"_itnb_ritnb_cpp", (DL_FUNC) &_itnb_ritnb_cpp, 7},
     {"_itnb_ditnb_cpp", (DL_FUNC) &_itnb_ditnb_cpp, 6},
     {"_itnb_pitnb_cpp", (DL_FUNC) &_itnb_pitnb_cpp, 6},
