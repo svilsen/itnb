@@ -68,7 +68,7 @@ ritnb <- function(n, mu, theta, p, i, t) {
     }
 
     ##
-    res <- ritnb_cpp(n = n, mu = mu, theta = theta, p = p, i = i, t = t, seed = sample(1e6, 1))
+    res <- ritnb_cpp(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
 
     ##
     return(res[, 1])

@@ -1,48 +1,13 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/gamma_distribution.hpp>
-#include <boost/random/poisson_distribution.hpp>
-#include <boost/random/uniform_01.hpp>
-
-#include "boost/math/special_functions/beta.hpp"
-// [[Rcpp::depends(BH)]]
-
 //// ritnb function
-// Generate random variates from a negative binomial distribution
-int rnbinom_cpp(const double & mu, const double & theta, const int & seed) {
-    //
-    boost::random::mt19937 rng(seed);
-
-    //
-    boost::random::gamma_distribution<> gamma(theta, mu / theta);
-
-    //
-    double g = gamma(rng);
-    boost::random::poisson_distribution poisson(g);
-
-    //
-    int x = poisson(rng);
-    return x;
-}
-
 // Generate random variates from a truncated negative binomial distribution
-int rtnbinom_cpp(const double & mu, const double & theta, const int & t, const int & seed) {
-    //
-    boost::random::mt19937 rng(seed);
-
-    //
-    boost::random::gamma_distribution<> gamma(theta, mu / theta);
-
+int rtnbinom_cpp(const double & mu, const double & theta, const int & t) {
     //
     int x = t;
-
     while (x <= t){
-        double g = gamma(rng);
-        boost::random::poisson_distribution poisson(g);
-
-        x = poisson(rng);
+        x = R::rnbinom(theta, theta / (mu + theta));
     }
 
     //
@@ -50,14 +15,7 @@ int rtnbinom_cpp(const double & mu, const double & theta, const int & t, const i
 }
 
 // [[Rcpp::export]]
-arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t, const int & seed) {
-    //
-    boost::random::mt19937 rng(seed);
-
-    //
-    boost::random::uniform_01<> uniform_01;
-    boost::random::uniform_int_distribution uniform(1, 10000);
-
+arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta, const arma::vec & p, const arma::vec & i, const arma::vec & t) {
     //
     const int & N_mu = mu.size();
     double mu_n = mu[0];
@@ -94,16 +52,16 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
         }
 
         int val;
-        const double u = uniform_01(rng);
+        const double u = R::runif(0, 1);
         if (u < p_n) {
             val = i_n;
         }
         else {
             if (t_n < 0) {
-                val = rnbinom_cpp(mu_n, theta_n, seed + uniform(rng));
+                val = R::rnbinom(theta_n, theta_n / (mu_n + theta_n));
             }
             else {
-                val = rtnbinom_cpp(mu_n, theta_n, t_n, seed + uniform(rng));
+                val = rtnbinom_cpp(mu_n, theta_n, t_n);
             }
         }
 
@@ -127,8 +85,8 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
         }
         else {
             //
-            const double pb = boost::math::ibeta(t + 1, theta, mu / tm);
-            log_d = log_d - std::log(pb);
+            const double pb = R::pbeta(mu / tm, t + 1, theta, true, true);
+            log_d = log_d - pb;
 
             //
             log_d = std::log(1.0 - p) + log_d;

@@ -4,10 +4,6 @@
 #include <roptim.h>
 // [[Rcpp::depends(roptim)]]
 
-#include "boost/math/special_functions/beta.hpp"
-#include "boost/math/special_functions/digamma.hpp"
-// [[Rcpp::depends(BH)]]
-
 #include "rdp_functions.hpp"
 
 using namespace roptim;
@@ -22,14 +18,7 @@ double complete_loglikelihood(const arma::vec & x, const arma::vec & xi, const a
     double d = 0.0;
     for (int n = 0; n < N; n++) {
         double log_d = ditnb_cpp(x[n], mu, theta, 0.0, i, t);
-        if (p == 0) {
-            log_d = (1 - z[n]) * log_d;
-        }
-        else {
-            log_d = z[n] * std::log(p) * xi[n] + (1.0 - z[n]) * (std::log(1.0 - p) + log_d);
-        }
-
-        d += log_d;
+        d += z[n] * std::log(p) * xi[n] + (1.0 - z[n]) * (std::log(1.0 - p) + log_d);
     }
 
     return d;
@@ -49,56 +38,73 @@ double restricted_loglikelihood(const arma::vec & x, const arma::vec & z, const 
     return d;
 }
 
-////
-arma::vec update_z(const arma::vec & x, const arma::vec & xi, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
+//// E-step
+void update_z(arma::vec & z, const arma::vec & x, const arma::vec & xi, const double & mu, const double & theta, const double & p, const int & i, const int & t, const int & N) {
     //
-    const int & N = x.size();
-
-    //
-    arma::vec z(N);
     for (int n = 0; n < N; n++) {
         double d_n = std::exp(ditnb_cpp(x[n], mu, theta, 0.0, i, t));
         z[n] = (p * xi[n]) / (p * xi[n] + (1.0 - p) * d_n);
     }
-
-    return z;
 }
 
-double update_p(const arma::vec & xi, const arma::vec & z_star) {
-    //
-    const int & N = xi.size();
-
+//// M-step
+// Inflation proportion
+void update_p(double & p, const arma::vec & xi, const arma::vec & z, const int & N) {
     double num = 0.0;
     double denom = 0.0;
     for (int n = 0; n < N; n++) {
-        num += (z_star[n] * xi[n]);
-        denom += (1.0 - z_star[n] * (1.0 - xi[n]));
+        num += (z[n] * xi[n]);
+        denom += (1.0 - z[n] * (1.0 - xi[n]));
     }
 
-    return num / denom;
+    p = num / denom;
+
+    if (p < 1e-16) {
+        p = 4e-16;
+    }
 }
 
-//[[Rcpp::export]]
-double theta_trapz(const double & a, const double & b, const double & theta, const int & t, const int & N) {
-    //
-    const double b_rev = 1.0 - b;
-    const double theta_1 = theta - 1.0;
+// NB-parameters
+double beta_derivative_integrand(const double & s, const double & t, const double & theta) {
+    const double s_rev = 1.0 - s;
+    double r = 0.0;
+    if ((s > 1e-8) & (s < (1.0 - 1e-8))) {
+        r = std::pow(s, t) * std::pow(s_rev, theta - 1) * std::log(s_rev);
+    }
 
+    return r;
+}
+
+double beta_derivative_trapz(const double & a, const double & b, const double & theta, const int & t, const int & N) {
     //
     const double delta_x = (b - a) / N;
-    double i = 0.5 * (std::pow(b, t) * std::pow(b_rev, theta_1) * std::log(b_rev));
-    for (int n = 1; n < N; n++) {
-        //
-        const double x_n = a + n * delta_x;
-        const double x_n_rev = 1.0 - x_n;
 
-        //
-        i += (std::pow(x_n, t) * std::pow(x_n_rev, theta_1) * std::log(x_n_rev));
+    double i = 0.5 * (beta_derivative_integrand(a, t, theta) + beta_derivative_integrand(b, t, theta));
+
+    for (int n = 1; n < N; n++) {
+        i += beta_derivative_integrand(a + n * delta_x, t, theta);
+    }
+
+    return i * delta_x;
+}
+
+double beta_derivative_boole(const double & a, const double & b, const double & theta, const int & t, const int & N) {
+    //
+    const double delta_x = (b - a) / N;
+
+    //
+    double i = 0.0;
+    for (int n = 0; n < (N - 3); n += 4) {
+        i += 7.0 * beta_derivative_integrand(a + n * delta_x, t, theta);
+        i += 32.0 * beta_derivative_integrand(a + (n + 1) * delta_x, t, theta);
+        i += 12.0 * beta_derivative_integrand(a + (n + 2) * delta_x, t, theta);
+        i += 32.0 * beta_derivative_integrand(a + (n + 3) * delta_x, t, theta);
+        i += 7.0 * beta_derivative_integrand(a + (n + 4) * delta_x, t, theta);
     }
 
     //
-    i *= delta_x;
-    return i;
+    const double scale_x = (2.0 / 45.0) * delta_x;
+    return scale_x * i;
 }
 
 class RL : public Functor {
@@ -108,12 +114,12 @@ public:
     arma::vec z_;
 
     // Constructor
-    RL(const arma::vec & x, const arma::vec & xi, const arma::vec & z, const double & p, const int & i, const int & t, const double & e) : p_(p), z_(z), x_(x), xi_(xi), N_(x_.size()), i_(i), t_(t), e_(e) { }
+    RL(const arma::vec & x, const arma::vec & xi, const arma::vec & z, const double & p, const int & i, const int & t, const double & e) : p_(p), z_(z), x_(x), xi_(xi), N_(x.size()), i_(i), t_(t), e_(e) { }
 
     // Functor / objective function
     double operator()(const arma::vec & x) override {
-        double mu_ = x[0];
-        double theta_ = x[1];
+        const double & mu_ = x[0];
+        const double & theta_ = x[1];
 
         //
         double d = -restricted_loglikelihood(x_, z_, mu_, theta_, p_, i_, t_);
@@ -121,52 +127,56 @@ public:
     }
 
     // Gradient function
-    // void Gradient(const arma::vec & x, arma::vec & gr) override {
-    //     const double & mu_ = x[0];
-    //     const double & theta_ = x[1];
-    //
-    //     gr[0] = (restricted_loglikelihood(x_, z_, mu_ - e_, theta_, p_, i_, t_) - restricted_loglikelihood(x_, z_, mu_ + e_, theta_, p_, i_, t_)) / (2.0 * e_);
-    //     gr[1] = (restricted_loglikelihood(x_, z_, mu_, theta_ - e_, p_, i_, t_) - restricted_loglikelihood(x_, z_, mu_, theta_ + e_, p_, i_, t_)) / (2.0 * e_);
-    // }
-
     void Gradient(const arma::vec & x, arma::vec & gr) override {
         //
         const double & mu_ = x[0];
         const double & theta_ = x[1];
 
         //
-        const double & t_p_t_ = std::pow(theta_, theta_);
+        double l = 0.0;
+        double l_mu_p = 0.0;
+        double l_theta_p = 0.0;
+        for (int n = 0; n < N_; n++) {
+            l += (1.0 - z_[n]) * ditnb_cpp(x_[n], mu_, theta_, p_, i_, t_);
+
+            //// Location
+            l_mu_p += (1.0 - z_[n]) * ditnb_cpp(x_[n], mu_ + e_, theta_, p_, i_, t_);
+
+            //// Overdispersion
+            l_theta_p += (1.0 - z_[n]) * ditnb_cpp(x_[n], mu_, theta_ + e_, p_, i_, t_);
+        }
 
         //
-        gr[0] = 0.0;
-        gr[1] = 0.0;
-        for (int n = 0; n < N_; n++) {
-            ////
-            const double & mt_ = mu_ + theta_;
-            const double & mti_ = 1.0 / mt_;
-            const double & xt_ = x_[n] + theta_;
+        const double ei = 1.0 / e_;
+        gr[0] = (l - l_mu_p) * ei;
+        gr[1] = (l - l_theta_p) * ei;
 
-            //// Mean parameters
-            // Derivatives of the regularised beta function
-            const double & b_mu_n = std::pow(mu_, t_) * t_p_t_ / std::pow(mt_, t_ + 1 + theta_);
-            const double & b_mu_d = boost::math::beta(t_ + 1, theta_, mu_ * mti_);
-            const double & I_mu_ = b_mu_n / b_mu_d;
-
-            // Gradient update
-            gr[0] += (1.0 - z_[n]) * (x_[n] / mu_ - xt_ * mti_ - I_mu_);
-
-            //// Overdispersion parameter
-            // Derivatives of the regularised beta function
-            const double & b_t_f = b_mu_n * mu_ / theta_;
-
-            const double & b_t_i = theta_trapz(0.0, mu_ * mti_, theta_, t_, 100);
-
-            const double & b_t_d = boost::math::digamma(t_ + 1.0 + theta_) - boost::math::digamma(theta_);
-            const double & I_t_ = -b_t_f + b_t_i + b_t_d;
-
-            // Gradient update
-            gr[1] += (1.0 - z_[n]) * (1.0 + std::log(theta_) - xt_ * mti_ + boost::math::digamma(xt_) - boost::math::digamma(theta_) - I_t_);
-        }
+        //     gr[0] = 0.0;
+        //     gr[1] = 0.0;
+        //     for (int n = 0; n < N_; n++) {
+        //         ////
+        //         const double & mu_theta_ = mu_ + theta_;
+        //         const double & mu_theta_i_ = 1.0 / mu_theta_;
+        //
+        //         const double & x_theta_ = x_[n] + theta_;
+        //         const double b_ = std::exp(R::pbeta(mu_ * mu_theta_i_, t_ + 1, theta_, true, true) + R::lbeta(t_ + 1, theta_));
+        //
+        //         //// Location
+        //         const double & b_mu_n_ = std::pow(mu_, t_) * std::pow(theta_, theta_) / std::pow(mu_theta_, t_ + 1 + theta_);
+        //         double I_mu_ = b_mu_n_ / b_;
+        //
+        //         gr[0] += (z_[n] - 1.0) * (x_[n] / mu_ - x_theta_ * mu_theta_i_ - I_mu_);
+        //
+        //         //// Overdispersion
+        //         // Derivatives of the regularised beta function
+        //         const double & b_t_f_ = std::pow(mu_, t_ + 1.0) * std::pow(theta_, theta_ - 1.0) / std::pow(mu_theta_, t_ + 1 + theta_);
+        //         const double & b_t_i_ = beta_derivative_boole(0.0, mu_ * mu_theta_i_, theta_, t_, M_);
+        //         const double & b_t_d_ = R::digamma(theta_) - R::digamma(t_ + 1.0 + theta_);
+        //
+        //         double I_theta_ = (b_t_i_ - b_t_f_) / b_ - b_t_d_;
+        //         gr[1] += (z_[n] - 1.0) * (1.0 + std::log(theta_) - std::log(mu_theta_) - x_theta_ * mu_theta_i_ + R::digamma(x_theta_) - R::digamma(theta_) - I_theta_);
+        //     }
+        // }
     }
 
 private:
@@ -179,8 +189,10 @@ private:
     // Parameters
     int i_;
     int t_;
+
     double e_;
 };
+
 
 
 ////
@@ -189,31 +201,46 @@ Rcpp::List em_itnb_cpp(
         const arma::vec & x, const arma::vec & xi,
         const double & mu_0, const double & theta_0, const double & p_0,
         const int & i, const int & t,
-        const int & iteration_min, const int & iteration_max, const double & tolerance,
+        const int & iteration_min, const int & iteration_max,
+        const double & tolerance,
         const int & trace, const bool & save_trace
 ) {
-    // Cube root of 10^(-16)
-    const double e = 4.6416 * std::pow(10, -6);
+    //
+    const int & N = x.size();
+    const double e = 4.6416 * 1e-6; // std::pow(2e-16, 0.33);
 
     //
-    arma::vec z_star = update_z(x, xi, mu_0, theta_0, p_0, i, t);
+    double p_j = p_0;
+    if (p_j < 1e-16) {
+        p_j = 4e-16;
+    }
+
+    arma::vec z(N);
+    update_z(z, x, xi, mu_0, theta_0, p_0, i, t, N);
+
     double c_log_likelihood_old = HUGE_VAL;
-    double c_log_likelihood = complete_loglikelihood(x, xi, z_star, mu_0, theta_0, p_0, i, t);
+    double c_log_likelihood = complete_loglikelihood(x, xi, z, mu_0, theta_0, p_j, i, t);
+    double abs_delta_c_log_likelihood = std::abs(c_log_likelihood - c_log_likelihood_old);
 
     //
     Roptim<RL> opt("L-BFGS-B");
-    RL r_log_likelihood(x, xi, z_star, p_0, i, t, e);
-
-    arma::vec pars_j = {mu_0, theta_0};
-
-    arma::vec lb = arma::ones(pars_j.size());
-    lb[0] = t + e;
-    lb[1] = 1e-8;
-
-    opt.set_lower(lb);
-    opt.set_hessian(true);
+    RL r_log_likelihood(x, xi, z, p_0, i, t, e);
 
     //
+    arma::vec lb = arma::ones(2);
+    lb[0] = t + 1;
+    lb[1] = 1e-8;
+
+    const double x_max = x.max();
+    arma::vec ub = arma::ones(2);
+    ub[0] = x_max;
+    ub[1] = x_max * x_max;
+
+    opt.set_lower(lb);
+    opt.set_upper(ub);
+
+    //
+    arma::vec pars_j = {mu_0, theta_0};
     arma::vec mu_trace, theta_trace, p_trace, loglike_trace;
     if (save_trace) {
         mu_trace.set_size(iteration_max);
@@ -235,21 +262,26 @@ Rcpp::List em_itnb_cpp(
 
     double mu_j = mu_0;
     double theta_j = theta_0;
-    double p_j = p_0;
+
+    if (trace > 0) {
+        Rcpp::Rcout << "Iteration: " <<  0 << "\t Current log-likelihood: " << c_log_likelihood << "\t Absolute change in log-likelihood: " << abs_delta_c_log_likelihood << "\n"
+                    << "\t Parameters: " << "\t mu = " << mu_j << "\t theta = " << theta_j << "\t p =" << p_j << "\n";
+    }
 
     //
     int j = 1;
     while (not_converged) {
         //// E-step
-        z_star = update_z(x, xi, mu_j, theta_j, p_j, i, t);
+        update_z(z, x, xi, mu_j, theta_j, p_j, i, t, N);
 
         //// M-step
         // Inflation proportion
-        p_j = update_p(xi, z_star);
-        r_log_likelihood.p_ = p_j;
-        r_log_likelihood.z_ = z_star;
+        update_p(p_j, xi, z, N);
 
         // NB parameters
+        r_log_likelihood.p_ = p_j;
+        r_log_likelihood.z_ = z;
+
         pars_j = {mu_j, theta_j};
 
         opt.minimize(r_log_likelihood, pars_j);
@@ -260,8 +292,8 @@ Rcpp::List em_itnb_cpp(
 
         //// Convergence
         c_log_likelihood_old = c_log_likelihood;
-        c_log_likelihood = complete_loglikelihood(x, xi, z_star, mu_j, theta_j, p_j, i, t);
-        double abs_delta_c_log_likelihood = std::abs(c_log_likelihood - c_log_likelihood_old);
+        c_log_likelihood = complete_loglikelihood(x, xi, z, mu_j, theta_j, p_j, i, t);
+        abs_delta_c_log_likelihood = std::abs(c_log_likelihood - c_log_likelihood_old);
 
         if (j > iteration_min) {
             if (j < iteration_max) {

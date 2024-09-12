@@ -51,8 +51,13 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         stop("'save_trace' has to be logical.")
     }
 
-    res <- list(trace = trace, tolerance = tolerance, iteration_max = iteration_max,
-                iteration_min = iteration_min, save_trace = save_trace)
+    res <- list(
+        trace = trace,
+        tolerance = tolerance,
+        iteration_max = iteration_max, iteration_min = iteration_min,
+        save_trace = save_trace
+    )
+
     return(res)
 }
 
@@ -118,176 +123,25 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
     mu <- mean(x[x_i == 0])
 
     var_x <- var(x[x_i == 0])
-    theta <- ifelse(var_x > mu, mu^2 / (var_x - mu), 100)
-
-    ##
-    z_star <- (p * x_i) /
-        (p * x_i + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
-
-    c_log_likelihood <- complete_loglikelihood(
-        x = x, xi = x_i, z = z_star,
-        mu = mu, theta = theta, p = p,
-        i = i, t = t
-    )
-
-    not_converged <- TRUE
-    if (control$trace > 0) {
-        cat("Iteration :", 0, "\t Current log-likelihood:", c_log_likelihood, "\t Absolute change in log-likelihood:", NA, "\n")
-        cat("\t Parameters (Initial): ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
-    }
-
-    if (control$save_trace) {
-        trace_list <- vector("list", control$iteration_max)
-        trace_list[[1]] <- data.frame(
-            Iteration = 0,
-            mu = mu,
-            theta = theta,
-            p = p,
-            LogLikelihood = c_log_likelihood,
-            AbsoluteChange = NA
-        )
-    }
-
-    j = 1
-    while (not_converged) {
-        ## E-step
-        z_star <- (p * x_i) /
-            (p * x_i + (1 - p) * ditnb(x = x, mu = mu, theta = theta, p = 0, i = i, t = t, return_log = FALSE))
-
-        ## M-step
-        p <- sum(z_star * x_i) / sum(1 - z_star * (1 - x_i))
-
-        pars <- optim(
-            par = c(mu, theta),
-            fn = restricted_log_likelihood,
-            x = x,
-            z = z_star,
-            p = p,
-            i = i,
-            t = t,
-            method = "L-BFGS-B",
-            lower = c(t, .Machine$double.eps),
-            upper = c(Inf, Inf),
-            control = list(trace = FALSE)
-        )$par
-
-        mu <- pars[1]
-        theta <- pars[2]
-
-        ## Updating convergence results
-        c_log_likelihood_old <- c_log_likelihood
-        c_log_likelihood <- complete_loglikelihood(
-            x = x, xi = x_i, z = z_star,
-            mu = mu, theta = theta, p = p,
-            i = i, t = t
-        )
-
-        change_log_likelihood <- abs(c_log_likelihood - c_log_likelihood_old)
-
-        not_converged <- ifelse(j < control$iteration_min, TRUE, (change_log_likelihood > control$tolerance) && (j < control$iteration_max))
-
-        ## Tracing
-        if ((control$trace > 0) & (((j %% control$trace) == 0) || (!not_converged))) {
-            cat("Iteration :", j, "\t Current log-likelihood:", c_log_likelihood, "\t Absolute change in log-likelihood:", change_log_likelihood, "\n")
-            cat("\t Parameters: ", "\t mu =", mu, "\t theta =", theta, "\t p =", p, "\n")
-        }
-
-        if (control$save_trace) {
-            trace_list[[j + 1]] <- data.frame(
-                Iteration = j,
-                mu = mu,
-                theta = theta,
-                p = p,
-                LogLikelihood = c_log_likelihood,
-                AbsoluteChange = change_log_likelihood
-            )
-        }
-
-        j = j + 1
-    }
-
-    returned_trace <- NULL
-    if (control$save_trace) {
-        trace_list <- trace_list[seq_len(j)]
-        returned_trace <- do.call("rbind", trace_list)
-    }
-
-    res <- list(
-        n = length(x),
-        x = x,
-        i = i,
-        t = t,
-        mu = mu,
-        theta = theta,
-        p = p,
-        log_likelihood = c_log_likelihood,
-        converged = !not_converged,
-        trace = returned_trace
-    )
-
-    class(res) <- "itnb"
-    return(res)
-}
-
-#' @export
-em_itnb_wrapper <- function(x, i, t, control = list()) {
-    ##
-    control <- do.call(em_itnb_control, control)
-
-    ##
-    if (!is.numeric(i)) {
-        stop("'i' has to be numeric.")
-    }
-    else if (!((length(i) == n) || length(i) == 1)) {
-        stop("'i' needs to have length 1, or be equal to 'n'.")
-    }
-    i <- ceiling(i)
-
-    ##
-    if (is.null(t)) {
-        t <- -1
-    }
-
-    if (!is.numeric(t)) {
-        stop("'t' has to be numeric.")
-    }
-    else if (!((length(t) == n) || length(t) == 1)) {
-        stop("'t' needs to have length 1, or be equal to 'n'.")
-    }
-
-    if (is.numeric(t)) {
-        t <- ceiling(t)
-        if (any(t >= i)) {
-            stop("'t' has to be smaller than 'i'.")
-        }
-    }
-
-    ##
-    x_i <- as.numeric(x == i)
-
-    ##
-    p <- mean(x_i)
-    mu <- mean(x[x_i == 0])
-
-    var_x <- var(x[x_i == 0])
-    theta <- ifelse(var_x > mu, mu^2 / (var_x - mu), 100)
+    theta <- ifelse(var_x > mu, 0.5 * mu^2 / (var_x - mu), 100)
 
     res <- em_itnb_cpp(
         x = x, xi = x_i,
         mu_0 = mu, theta_0 = theta, p_0 = p,
         i = i, t = t,
-        iteration_min = control$iteration_min, iteration_max = control$iteration_max, tolerance = control$tolerance,
+        iteration_min = control$iteration_min, iteration_max = control$iteration_max,
+        tolerance = control$tolerance, # tolerance_int = control$tolerance_int, use_fd = control$use_fd,
         trace = control$trace, save_trace = control$save_trace
     )
 
     if (control$save_trace) {
         res$trace <- do.call("rbind", res$trace) |> t() |> as.data.frame()
+        res$trace <- cbind(Iteration = seq_len(nrow(res$trace)) - 1, res$trace)
     }
 
+    class(res) <- "itnb"
     return(res)
 }
-
-
 
 #' Confidence envelopes of itnb-object.
 #'

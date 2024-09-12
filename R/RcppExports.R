@@ -9,16 +9,12 @@ restricted_loglikelihood <- function(x, z, mu, theta, p, i, t) {
     .Call('_itnb_restricted_loglikelihood', PACKAGE = 'itnb', x, z, mu, theta, p, i, t)
 }
 
-theta_trapz <- function(a, b, theta, t, N) {
-    .Call('_itnb_theta_trapz', PACKAGE = 'itnb', a, b, theta, t, N)
-}
-
 em_itnb_cpp <- function(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace) {
     .Call('_itnb_em_itnb_cpp', PACKAGE = 'itnb', x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, trace, save_trace)
 }
 
-ritnb_cpp <- function(n, mu, theta, p, i, t, seed) {
-    .Call('_itnb_ritnb_cpp', PACKAGE = 'itnb', n, mu, theta, p, i, t, seed)
+ritnb_cpp <- function(n, mu, theta, p, i, t) {
+    .Call('_itnb_ritnb_cpp', PACKAGE = 'itnb', n, mu, theta, p, i, t)
 }
 
 ditnb_cpp <- function(x, mu, theta, p, i, t) {
