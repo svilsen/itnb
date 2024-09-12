@@ -11,41 +11,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// complete_loglikelihood
-double complete_loglikelihood(const arma::vec& x, const arma::vec& xi, const arma::vec& z, const double& mu, const double& theta, const double& p, const int& i, const int& t);
-RcppExport SEXP _itnb_complete_loglikelihood(SEXP xSEXP, SEXP xiSEXP, SEXP zSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type xi(xiSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const double& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const double& >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< const double& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
-    Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(complete_loglikelihood(x, xi, z, mu, theta, p, i, t));
-    return rcpp_result_gen;
-END_RCPP
-}
-// restricted_loglikelihood
-double restricted_loglikelihood(const arma::vec& x, const arma::vec& z, const double& mu, const double& theta, const double& p, const int& i, const int& t);
-RcppExport SEXP _itnb_restricted_loglikelihood(SEXP xSEXP, SEXP zSEXP, SEXP muSEXP, SEXP thetaSEXP, SEXP pSEXP, SEXP iSEXP, SEXP tSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const double& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const double& >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< const double& >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
-    Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(restricted_loglikelihood(x, z, mu, theta, p, i, t));
-    return rcpp_result_gen;
-END_RCPP
-}
 // em_itnb_cpp
 Rcpp::List em_itnb_cpp(const arma::vec& x, const arma::vec& xi, const double& mu_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const int& trace, const bool& save_trace);
 RcppExport SEXP _itnb_em_itnb_cpp(SEXP xSEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
@@ -118,8 +83,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_itnb_complete_loglikelihood", (DL_FUNC) &_itnb_complete_loglikelihood, 8},
-    {"_itnb_restricted_loglikelihood", (DL_FUNC) &_itnb_restricted_loglikelihood, 7},
     {"_itnb_em_itnb_cpp", (DL_FUNC) &_itnb_em_itnb_cpp, 12},
     {"_itnb_ritnb_cpp", (DL_FUNC) &_itnb_ritnb_cpp, 6},
     {"_itnb_ditnb_cpp", (DL_FUNC) &_itnb_ditnb_cpp, 6},

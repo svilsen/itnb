@@ -7,8 +7,6 @@
 em_itnb_control(
   trace = 0,
   tolerance = 1e-06,
-  tolerance_int = 100,
-  use_fd = FALSE,
   iteration_min = 5,
   iteration_max = 10000,
   save_trace = FALSE
@@ -18,10 +16,6 @@ em_itnb_control(
 \item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
 
 \item{tolerance}{Numeric: Convergence tolerance.}
-
-\item{tolerance_int}{Numeric: Approximate integral tolerance.}
-
-\item{use_fd}{TRUE/FALSE: Should finite difference be used to calculate the gradient?}
 
 \item{iteration_min}{Numeric (>= 0): The minimum number of allowed iterations.}
 

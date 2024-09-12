@@ -9,7 +9,6 @@
 using namespace roptim;
 
 ////
-// [[Rcpp::export]]
 double complete_loglikelihood(const arma::vec & x, const arma::vec & xi, const arma::vec & z, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
     //
     const int & N = x.size();
@@ -19,20 +18,6 @@ double complete_loglikelihood(const arma::vec & x, const arma::vec & xi, const a
     for (int n = 0; n < N; n++) {
         double log_d = ditnb_cpp(x[n], mu, theta, 0.0, i, t);
         d += z[n] * std::log(p) * xi[n] + (1.0 - z[n]) * (std::log(1.0 - p) + log_d);
-    }
-
-    return d;
-}
-
-// [[Rcpp::export]]
-double restricted_loglikelihood(const arma::vec & x, const arma::vec & z, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
-    //
-    const int & N = x.size();
-
-    //
-    double d = 0.0;
-    for (int n = 0; n < N; n++) {
-        d += (1.0 - z[n]) * ditnb_cpp(x[n], mu, theta, p, i, t);
     }
 
     return d;
@@ -122,8 +107,12 @@ public:
         const double & theta_ = x[1];
 
         //
-        double d = -restricted_loglikelihood(x_, z_, mu_, theta_, p_, i_, t_);
-        return d;
+        double d = 0.0;
+        for (int n = 0; n < N_; n++) {
+            d += (1.0 - z_[n]) * ditnb_cpp(x_[n], mu_, theta_, p_, i_, t_);
+        }
+
+        return -d;
     }
 
     // Gradient function
@@ -184,16 +173,16 @@ private:
     arma::vec x_;
     arma::vec xi_;
 
+    // Number of observations
     int N_;
 
     // Parameters
     int i_;
     int t_;
 
+    // Precision
     double e_;
 };
-
-
 
 ////
 // [[Rcpp::export]]
