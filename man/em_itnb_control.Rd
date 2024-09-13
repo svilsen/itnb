@@ -9,19 +9,28 @@ em_itnb_control(
   tolerance = 1e-06,
   iteration_min = 5,
   iteration_max = 10000,
+  steps = 100,
+  fd = TRUE,
+  steps_fd = .Machine$double.eps^(1/3),
   save_trace = FALSE
 )
 }
 \arguments{
 \item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
 
-\item{tolerance}{Numeric: Convergence tolerance.}
+\item{tolerance}{Numeric (> 0): Convergence tolerance.}
 
 \item{iteration_min}{Numeric (>= 0): The minimum number of allowed iterations.}
 
 \item{iteration_max}{Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.}
 
+\item{steps}{Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.}
+
+\item{fd}{TRUE/FALSE: should parameter optimisation use finite difference for the gradient?}
+
 \item{save_trace}{TRUE/FALSE: should the entire trace be stored?}
+
+\item{steps_fd:}{Numeric (> 0): The step-size used to approximate the gradient with finite difference.}
 }
 \value{
 A list of default arguments for the \link{em_itnb} function.

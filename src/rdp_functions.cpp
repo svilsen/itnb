@@ -89,9 +89,11 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
             log_d = log_d - pb;
 
             //
-            log_d = std::log(1.0 - p) + log_d;
-            if (x == i) {
-                log_d = std::log1p(p + std::expm1(log_d));
+            if (p > 1e-16) {
+                log_d = std::log(1.0 - p) + log_d;
+                if (x == i) {
+                    log_d = std::log1p(p + std::expm1(log_d));
+                }
             }
         }
     }

@@ -3,14 +3,17 @@
 #' @description Creates a list of default options.
 #'
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
-#' @param tolerance Numeric: Convergence tolerance.
+#' @param tolerance Numeric (> 0): Convergence tolerance.
 #' @param iteration_min Numeric (>= 0): The minimum number of allowed iterations.
 #' @param iteration_max Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.
+#' @param steps Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.
+#' @param fd TRUE/FALSE: should parameter optimisation use finite difference for the gradient?
+#' @param steps_fd: Numeric (> 0): The step-size used to approximate the gradient with finite difference.
 #' @param save_trace TRUE/FALSE: should the entire trace be stored?
 #'
 #' @return A list of default arguments for the \link{em_itnb} function.
 #' @export
-em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, save_trace = FALSE) {
+em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, steps = 100, fd = TRUE, steps_fd = .Machine$double.eps^(1/3), save_trace = FALSE) {
     if (!is.numeric(trace)) {
         stop("'trace' has to be numeric.")
     }
@@ -20,7 +23,7 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         stop("'tolerance' has to be numeric.")
     }
 
-    if (tolerance <= .Machine$double.eps) {
+    if (tolerance < .Machine$double.eps) {
         stop("'tolerance' has to be bigger than two times the machine epsilon.")
     }
 
@@ -38,6 +41,19 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         stop("'iteration_max' has be larger than 'iteration_min'.")
     }
 
+    if (!is.numeric(steps)) {
+        stop("'steps' has to be numeric.")
+    }
+    steps <- ceiling(steps)
+
+    if (!is.logical(fd)) {
+        stop("'fd' has to be logical.")
+    }
+
+    if (steps_fd < .Machine$double.eps) {
+        stop("'steps_fd' has to be bigger than two times the machine epsilon.")
+    }
+
     if (!is.logical(save_trace)) {
         stop("'save_trace' has to be logical.")
     }
@@ -46,6 +62,7 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         trace = trace,
         tolerance = tolerance,
         iteration_max = iteration_max, iteration_min = iteration_min,
+        steps = steps, fd = fd, steps_fd = steps_fd,
         save_trace = save_trace
     )
 
@@ -121,7 +138,8 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
         mu_0 = mu, theta_0 = theta, p_0 = p,
         i = i, t = t,
         iteration_min = control$iteration_min, iteration_max = control$iteration_max,
-        tolerance = control$tolerance, # tolerance_int = control$tolerance_int, use_fd = control$use_fd,
+        tolerance = control$tolerance, steps = control$steps,
+        fd = control$fd, steps_fd = control$steps_fd,
         trace = control$trace, save_trace = control$save_trace
     )
 
@@ -134,6 +152,40 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
     return(res)
 }
 
+#' Extract model coefficients
+#'
+#' @description A function which extracts model coefficients from objects of class \code{itnb}.
+#'
+#' @param object An \link{itnb-object}.
+#' @param ... Additional arguments (see details).
+#'
+#' @details The only additional argument used by the function is \code{par} used to specify which parameter should be returned by the function, i.e. it takes the values \code{"mu"}, \code{"theta"}, or \code{"p"}.
+#'
+#' @return If \code{par} is left as \code{NULL} a list of all parameters will be returned, otherwise the function returns the parameter specified by \code{par}.
+#' @export
+coef.itnb <- function(object, ...) {
+    dots <- list(...)
+
+    if (is.null(dots[["par"]])) {
+        r <- object[c("mu", "theta", "p")]
+    }
+    else if (dots[["par"]] == "mu") {
+        r <- object[["mu"]]
+    }
+    else if (dots[["par"]] == "theta") {
+        r <- object[["theta"]]
+    }
+    else if (dots[["par"]] == "p") {
+        r <- object[["p"]]
+    }
+    else {
+        stop("'pars' only takes the values 'mu', 'theta', or 'p'.")
+    }
+
+    return(r)
+}
+
+
 #' Plot parameter trace of an \link{itnb-object}
 #'
 #' @description A function plotting the EM parameter trace returned by the \link{em_itnb} function. Note: the function can only be used if the argument \code{save_trace} in the \link{em_itnb_control} function was set to \code{TRUE}.
@@ -143,10 +195,14 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
 #'
 #' @export
 plot.itnb <- function(x, ...) {
+    dots <- list(...)
     if (is.null(x$trace))
         stop("The 'trace' tibble was not found. Set 'save_trace = TRUE' in the 'em_itnb_control' function, and re-run the optimisation routine.")
 
-    itnb_trace <- x$trace[-1,]
+    itnb_trace <- x$trace
+    if (!is.null(dots[["log"]])) {
+        itnb_trace <- itnb_trace[-1, ]
+    }
 
     par(mfrow = c(2, 2))
     plot(itnb_trace$Iteration, itnb_trace$LogLikelihood, type = "l", xlab = "Iteration", ylab = "Log-likelihood", ...)
