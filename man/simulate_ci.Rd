@@ -8,19 +8,17 @@
 simulate_ci(
   object,
   level = 0.95,
-  trace = TRUE,
   nr_simulations = 2000,
   parametric = FALSE,
-  plot = FALSE
+  trace = 0
 )
 
 \method{simulate_ci}{itnb}(
   object,
   level = 0.95,
-  trace = TRUE,
   nr_simulations = 2000,
   parametric = FALSE,
-  plot = FALSE
+  trace = 0
 )
 }
 \arguments{
@@ -28,13 +26,11 @@ simulate_ci(
 
 \item{level}{Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.}
 
-\item{trace}{TRUE/FALSE: should a trace be shown?}
-
 \item{nr_simulations}{Numeric: The number of simulations used to create the confidence envelopes.}
 
 \item{parametric}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
 
-\item{plot}{TRUE/FALSE: should a density plot of the parameters be returned?}
+\item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
 }
 \value{
 If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.

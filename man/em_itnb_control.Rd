@@ -12,6 +12,7 @@ em_itnb_control(
   steps = 100,
   fd = TRUE,
   steps_fd = .Machine$double.eps^(1/3),
+  save_data = TRUE,
   save_trace = FALSE
 )
 }
@@ -28,7 +29,9 @@ em_itnb_control(
 
 \item{fd}{TRUE/FALSE: should parameter optimisation use finite difference for the gradient?}
 
-\item{save_trace}{TRUE/FALSE: should the entire trace be stored?}
+\item{save_data}{TRUE/FALSE: should the data be stored in the return object?}
+
+\item{save_trace}{TRUE/FALSE: should the entire trace be stored in the return object?}
 
 \item{steps_fd:}{Numeric (> 0): The step-size used to approximate the gradient with finite difference.}
 }

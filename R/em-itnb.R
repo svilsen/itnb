@@ -9,16 +9,19 @@
 #' @param steps Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.
 #' @param fd TRUE/FALSE: should parameter optimisation use finite difference for the gradient?
 #' @param steps_fd: Numeric (> 0): The step-size used to approximate the gradient with finite difference.
-#' @param save_trace TRUE/FALSE: should the entire trace be stored?
+#' @param save_data TRUE/FALSE: should the data be stored in the return object?
+#' @param save_trace TRUE/FALSE: should the entire trace be stored in the return object?
 #'
 #' @return A list of default arguments for the \link{em_itnb} function.
 #' @export
-em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, steps = 100, fd = TRUE, steps_fd = .Machine$double.eps^(1/3), save_trace = FALSE) {
+em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, steps = 100, fd = TRUE, steps_fd = .Machine$double.eps^(1/3), save_data = TRUE, save_trace = FALSE) {
+    ##
     if (!is.numeric(trace)) {
         stop("'trace' has to be numeric.")
     }
     trace <- ceiling(trace)
 
+    ##
     if (!is.numeric(tolerance)) {
         stop("'tolerance' has to be numeric.")
     }
@@ -27,6 +30,7 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         stop("'tolerance' has to be bigger than two times the machine epsilon.")
     }
 
+    ##
     if (!is.numeric(iteration_min)) {
         stop("'iteration_min' has to be numeric.")
     }
@@ -41,33 +45,45 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
         stop("'iteration_max' has be larger than 'iteration_min'.")
     }
 
+    ##
     if (!is.numeric(steps)) {
         stop("'steps' has to be numeric.")
     }
     steps <- ceiling(steps)
 
+    ##
     if (!is.logical(fd)) {
         stop("'fd' has to be logical.")
     }
 
+    ##
     if (steps_fd < .Machine$double.eps) {
         stop("'steps_fd' has to be bigger than two times the machine epsilon.")
     }
 
+    ##
     if (!is.logical(save_trace)) {
         stop("'save_trace' has to be logical.")
     }
 
+    ##
+    if (!is.logical(save_data)) {
+        stop("'save_data' has to be logical.")
+    }
+
+    ##
     res <- list(
         trace = trace,
         tolerance = tolerance,
         iteration_max = iteration_max, iteration_min = iteration_min,
         steps = steps, fd = fd, steps_fd = steps_fd,
-        save_trace = save_trace
+        save_data = save_data, save_trace = save_trace
     )
 
+    ##
     return(res)
 }
+
 
 #' @title itnb parameter optimisation
 #'
@@ -84,6 +100,7 @@ em_itnb_control <- function(trace = 0, tolerance = 1e-6, iteration_min = 5, iter
 em_itnb <- function(x, i, t, control = list()) {
     UseMethod("em_itnb")
 }
+
 
 #' @rdname em_itnb
 #' @method em_itnb numeric
@@ -144,13 +161,21 @@ em_itnb.numeric <- function(x, i, t, control = list()) {
     )
 
     if (control$save_trace) {
-        res$trace <- do.call("rbind", res$trace) |> t() |> as.data.frame()
-        res$trace <- cbind(Iteration = seq_len(nrow(res$trace)) - 1, res$trace)
+        res[["trace"]] <- do.call("rbind", res[["trace"]]) |> t() |> as.data.frame()
+        res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
+    }
+
+    if (control$save_data) {
+        res[["data"]] <- x
+    }
+    else {
+        res[["data"]] <- NA
     }
 
     class(res) <- "itnb"
     return(res)
 }
+
 
 #' Extract model coefficients
 #'
@@ -197,7 +222,7 @@ coef.itnb <- function(object, ...) {
 plot.itnb <- function(x, ...) {
     dots <- list(...)
     if (is.null(x$trace))
-        stop("The 'trace' tibble was not found. Set 'save_trace = TRUE' in the 'em_itnb_control' function, and re-run the optimisation routine.")
+        stop("The 'trace' data.frame was not found. Set 'save_trace = TRUE' in the 'em_itnb_control' function, and re-run the optimisation routine.")
 
     itnb_trace <- x$trace
     if (!is.null(dots[["log"]])) {

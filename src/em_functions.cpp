@@ -173,34 +173,30 @@ private:
 };
 
 ////
-// [[Rcpp::export]]
-Rcpp::List em_itnb_cpp(
-        const arma::vec & x, const arma::vec & xi,
-        const double & mu_0, const double & theta_0, const double & p_0,
-        const int & i, const int & t,
-        const int & iteration_min, const int & iteration_max,
-        const double & tolerance,
-        const int & steps,
-        const bool & fd, const double & steps_fd,
-        const int & trace, const bool & save_trace
+void optimise_itnb(
+    double & mu_j, double & theta_j, double & p_j, double & loglike_j,
+    int & j, bool & not_converged, std::string & convergence_flag,
+    arma::vec & mu_trace, arma::vec & theta_trace, arma::vec & p_trace, arma::vec & loglike_trace,
+    const arma::vec & x, const arma::vec xi,
+    const int & i, const int & t, const int & N,
+    const int & iteration_min, const int & iteration_max,
+    const double & tolerance,
+    const int & steps,
+    const bool & fd, const double & steps_fd,
+    const int & trace, const bool & save_trace
 ) {
-    //
-    const int & N = x.size();
+    not_converged = true;
+    convergence_flag = "";
 
-    //
-    double p_j = p_0;
-    if (p_j < 1e-16) {
-        p_j = 4e-16;
-    }
+    loglike_j = loglikelihood(x, mu_j, theta_j, p_j, i, t, N);
+    double loglike_j_old = HUGE_VAL;
+    double delta_loglike_j = loglike_j - loglike_j_old;
 
     arma::vec z(N);
-    update_z(z, x, xi, mu_0, theta_0, p_0, i, t, N);
+    update_z(z, x, xi, mu_j, theta_j, p_j, i, t, N);
 
-    double c_log_likelihood_old = HUGE_VAL;
-    double c_log_likelihood = loglikelihood(x, mu_0, theta_0, p_j, i, t, N);
-    double delta_c_log_likelihood = c_log_likelihood - c_log_likelihood_old;
-
-    arma::vec pars_j = {mu_0, theta_0};
+    //
+    arma::vec pars_j = {mu_j, theta_j};
 
     //
     Roptim<RL> opt("L-BFGS-B");
@@ -213,36 +209,13 @@ Rcpp::List em_itnb_cpp(
 
     opt.set_lower(lb);
 
-    //
-    arma::vec mu_trace, theta_trace, p_trace, loglike_trace;
-    if (save_trace) {
-        mu_trace.set_size(iteration_max);
-        mu_trace[0] = mu_0;
-
-        theta_trace.set_size(iteration_max);
-        theta_trace[0] = theta_0;
-
-        p_trace.set_size(iteration_max);
-        p_trace[0] = p_0;
-
-        loglike_trace.set_size(iteration_max);
-        loglike_trace[0] = c_log_likelihood;
-    }
-
-    //
-    bool not_converged = true;
-    std::string convergence_flag = "";
-
-    double mu_j = mu_0;
-    double theta_j = theta_0;
-
     if (trace > 0) {
-        Rcpp::Rcout << "Iteration: " <<  0 << "\t Current log-likelihood: " << c_log_likelihood << "\t Change in log-likelihood: " << delta_c_log_likelihood << "\n"
+        Rcpp::Rcout << "Iteration: " << j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << delta_loglike_j << "\n"
                     << "\t Parameters: " << "\t mu = " << mu_j << "\t theta = " << theta_j << "\t p =" << p_j << "\n";
     }
 
     //
-    int j = 1;
+    j = 1;
     while (not_converged) {
         const double p_j_old = p_j;
         arma::vec pars_j_old = {mu_j, theta_j};
@@ -264,11 +237,11 @@ Rcpp::List em_itnb_cpp(
         theta_j = pars_j[1];
 
         //// Convergence
-        c_log_likelihood_old = c_log_likelihood;
-        c_log_likelihood = loglikelihood(x, mu_j, theta_j, p_j, i, t, N);
-        delta_c_log_likelihood = c_log_likelihood - c_log_likelihood_old;
+        loglike_j_old = loglike_j;
+        loglike_j = loglikelihood(x, mu_j, theta_j, p_j, i, t, N);
+        delta_loglike_j = loglike_j - loglike_j_old;
 
-        if (delta_c_log_likelihood < -1e-8) {
+        if (delta_loglike_j < -1e-8) {
             not_converged = false;
             convergence_flag = "DECREASING LIKELIHOOD DETECTED.";
 
@@ -276,14 +249,14 @@ Rcpp::List em_itnb_cpp(
             mu_j = pars_j_old[0];
             theta_j = pars_j_old[1];
 
-            c_log_likelihood = c_log_likelihood_old;
+            loglike_j = loglike_j_old;
             break;
         }
 
         if (j > iteration_min) {
             if (j < iteration_max) {
 
-                if (std::abs(delta_c_log_likelihood) < tolerance) {
+                if (std::abs(delta_loglike_j) < tolerance) {
                     not_converged = false;
                 }
             }
@@ -296,7 +269,7 @@ Rcpp::List em_itnb_cpp(
         //// Trace
         if (trace > 0) {
             if (((j % trace) == 0) | (!not_converged)) {
-                Rcpp::Rcout << "Iteration: " <<  j << "\t Current log-likelihood: " << c_log_likelihood << "\t Absolute change in log-likelihood: " << delta_c_log_likelihood << "\n"
+                Rcpp::Rcout << "Iteration: " <<  j << "\t Current log-likelihood: " << loglike_j << "\t Absolute change in log-likelihood: " << delta_loglike_j << "\n"
                             << "\t Parameters: " << "\t mu = " << mu_j << "\t theta = " << theta_j << "\t p =" << p_j << "\n";
             }
         }
@@ -305,12 +278,74 @@ Rcpp::List em_itnb_cpp(
             mu_trace[j] = mu_j;
             theta_trace[j] = theta_j;
             p_trace[j] = p_j;
-            loglike_trace[j] = c_log_likelihood;
+            loglike_trace[j] = loglike_j;
         }
 
         ////
         j++;
     }
+}
+
+
+////
+// [[Rcpp::export]]
+Rcpp::List em_itnb_cpp(
+        const arma::vec & x, const arma::vec & xi,
+        const double & mu_0, const double & theta_0, const double & p_0,
+        const int & i, const int & t,
+        const int & iteration_min, const int & iteration_max,
+        const double & tolerance,
+        const int & steps,
+        const bool & fd, const double & steps_fd,
+        const int & trace, const bool & save_trace
+) {
+    //
+    const int & N = x.size();
+
+    //
+    int j = 0;
+    bool not_converged = true;
+    std::string convergence_flag = "";
+
+    //
+    double p_j = p_0;
+    if (p_j < 1e-16) {
+        p_j = 4e-16;
+    }
+
+    //
+    double mu_j = mu_0;
+    double theta_j = theta_0;
+
+    //
+    double loglike_j = 0.0;
+
+    //
+    arma::vec mu_trace, theta_trace, p_trace, loglike_trace;
+    if (save_trace) {
+        mu_trace.set_size(iteration_max);
+        mu_trace[0] = mu_0;
+
+        theta_trace.set_size(iteration_max);
+        theta_trace[0] = theta_0;
+
+        p_trace.set_size(iteration_max);
+        p_trace[0] = p_0;
+
+        loglike_trace.set_size(iteration_max);
+        loglike_trace[0] = HUGE_VAL;
+    }
+
+    //
+    optimise_itnb(
+        mu_j, theta_j, p_j, loglike_j,
+        j, not_converged, convergence_flag,
+        mu_trace, theta_trace, p_trace, loglike_trace,
+        x, xi, i, t, N,
+        iteration_min, iteration_max, tolerance,
+        steps, fd, steps_fd,
+        trace, save_trace
+    );
 
     //
     Rcpp::List trace_list;
@@ -324,12 +359,15 @@ Rcpp::List em_itnb_cpp(
     }
 
     return Rcpp::List::create(
-        Rcpp::Named("LogLikelihood") = c_log_likelihood,
+        Rcpp::Named("loglikelihood") = loglike_j,
+        Rcpp::Named("data") = 0,
+        Rcpp::Named("i") = i,
+        Rcpp::Named("t") = t,
         Rcpp::Named("mu") = mu_j,
         Rcpp::Named("theta") = theta_j,
         Rcpp::Named("p") = p_j,
         Rcpp::Named("trace") = trace_list,
-        Rcpp::Named("Converged") = !not_converged,
-        Rcpp::Named("Flag") = convergence_flag
+        Rcpp::Named("converged") = !not_converged,
+        Rcpp::Named("flag") = convergence_flag
     );
 }

@@ -2,6 +2,8 @@
 
 S3method(coef,itnb)
 S3method(em_itnb,numeric)
+S3method(plot,ci)
+S3method(plot,ci_complete)
 S3method(plot,itnb)
 S3method(simulate_ci,itnb)
 export(ditnb)
