@@ -6,7 +6,7 @@ Date: 2024-08-29
 Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@math.aau.dk") 
 Description: An inflated and truncated negative binomial regression model, with parameter estimation by the EM-algorithm, and confidence envelopes by either the parametric and non-parametric bootstrap.
 License: MIT + file LICENSE
-Imports: stats, progress, graphics, Rcpp (>= 1.0.4.6)
+Imports: stats, graphics, Rcpp (>= 1.0.4.6)
 LinkingTo: Rcpp, RcppArmadillo, roptim
 Encoding: UTF-8
 RoxygenNote: 7.3.2

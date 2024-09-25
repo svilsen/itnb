@@ -36,32 +36,39 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
     arma::vec x(n);
     for (int j = 0; j < n; j++) {
         if (N_mu > 1) {
-            mu_n = mu[n];
+            mu_n = mu[j];
         }
         if (N_theta > 1) {
-            theta_n = theta[n];
+            theta_n = theta[j];
         }
         if (N_p > 1) {
-            p_n = p[n];
+            p_n = p[j];
         }
         if (N_i > 1) {
-            i_n = i[n];
+            i_n = i[j];
         }
         if (N_t > 1) {
-            t_n = t[n];
+            t_n = t[j];
         }
 
         int val;
-        const double u = R::runif(0, 1);
+        double u;
+        if (i_n > -1) {
+            u = R::runif(0, 1);
+        }
+        else {
+            u = 1.0;
+        }
+
         if (u < p_n) {
             val = i_n;
         }
         else {
-            if (t_n < 0) {
-                val = R::rnbinom(theta_n, theta_n / (mu_n + theta_n));
+            if (t_n > -1) {
+                val = rtnbinom_cpp(mu_n, theta_n, t_n);
             }
             else {
-                val = rtnbinom_cpp(mu_n, theta_n, t_n);
+                val = R::rnbinom(theta_n, theta_n / (mu_n + theta_n));
             }
         }
 
@@ -87,13 +94,16 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
             //
             const double pb = R::pbeta(mu / tm, t + 1, theta, true, true);
             log_d = log_d - pb;
+        }
+    }
 
-            //
-            if (p > 1e-16) {
-                log_d = std::log(1.0 - p) + log_d;
-                if (x == i) {
-                    log_d = std::log1p(p + std::expm1(log_d));
-                }
+    //
+    if (i > -1) {
+        if (p > 1e-16) {
+            log_d = std::log(1.0 - p) + log_d;
+
+            if (x == i) {
+                log_d = std::log1p(p + std::expm1(log_d));
             }
         }
     }

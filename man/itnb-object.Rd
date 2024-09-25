@@ -6,15 +6,16 @@
 \description{
 An itnb-object is a list containing the following:
 \describe{
-    \item{\code{n}}{Integer: The number of observed counts.}
-    \item{\code{x}}{Vector: The observed counts.}
-    \item{\code{i}}{Integer: The inflation point.}
-    \item{\code{t}}{Integer: The truncation point.}
-    \item{\code{mu}}{Numeric: The expected value.}
-    \item{\code{theta}}{Numeric: The overdispersion.}
-    \item{\code{p}}{Numeric: The inflation proportion.}
-    \item{\code{log_likelihood}}{Numeric: The complete log-likelihood of the optimised parameters.}
-    \item{\code{converged}}{TRUE/FALSE: Did the EM-algorithm converge?}
-    \item{\code{trace}}{A \link{data.frame} of the trace, if the argument \code{save_trace} in \link{em_itnb_control} was \code{TRUE}, otherwise it is \code{NULL}.}
+    \item{\code{formula}}{The \link{formula} supplied to the model.}
+    \item{\code{data}}{If \code{save_trace = TRUE} in the control object, it contains the data used to optimise the parameters of the model, otherwise it is left \code{NA}.}
+    \item{\code{i}}{The specified inflation point.}
+    \item{\code{t}}{The specified truncation point.}
+    \item{\code{loglikelihood}}{The loglikelihood of the optimised parameters.}
+    \item{\code{beta}}{The optimised regression coefficients.}
+    \item{\code{theta}}{The optimised overdispersion.}
+    \item{\code{p}}{The optimised inflation proportion.}
+    \item{\code{trace}}{If \code{save_trace = TRUE} in the control object, it contains a \link{data.frame} of the trace produced by the optimisation routine, otherwise it is set to \code{NA}.}
+    \item{\code{converged}}{Boolean indicating whether the optimisation routine did or did not converge.}
+    \item{\code{flag}}{If the optimisation routine did not converge, a string indicating the potential point of failure is returned, otherwise it is set to \code{NA}.}
 }
 }

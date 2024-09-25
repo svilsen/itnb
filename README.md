@@ -26,11 +26,23 @@ theta <- 10
 p <- 0.2
 
 ## Generating random variates
+# Truncation point below inflation
 x <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
 
-## Plotting sample
-mids <- hist(x, breaks = seq(min(x) - 10, max(x)), plot = FALSE)$mids
-hist(x, breaks = seq(min(x), max(x)), probability = TRUE, ylim = c(0.0, 0.25)); points(mids, ditnb(mids, mu, theta, p, i, t), type = "l", lwd = 2, col = "dodgerblue2")
+mids <- hist(x, breaks = seq(min(x) - 10, max(x) + 1) - 0.5, plot = FALSE)$mids
+hist(x, breaks = seq(min(x), max(x) + 1) - 0.5, probability = TRUE, ylim = c(0.0, 0.25)); points(mids, ditnb(mids, mu, theta, p, i, t), type = "l", lwd = 2, col = "dodgerblue2")
+
+# Truncation point above inflation
+y <- ritnb(n = n, mu = mu, theta = theta, p = p, i = t - 2, t = t)
+
+mids <- hist(y, breaks = seq(min(y) - 10, max(y) + 1) - 0.5, plot = FALSE)$mids
+hist(y, breaks = seq(min(y), max(y) + 1) - 0.5, probability = TRUE, ylim = c(0.0, 0.25)); points(mids, ditnb(mids, mu, theta, p, t - 2, t), type = "l", lwd = 2, col = "dodgerblue2")
+
+# Truncation point well below inflation
+z <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i + 5, t = t)
+
+mids <- hist(z, breaks = seq(min(z) - 10, max(z) + 1) - 0.5, plot = FALSE)$mids
+hist(z, breaks = seq(min(z), max(z) + 1) - 0.5, probability = TRUE, ylim = c(0.0, 0.25)); points(mids, ditnb(mids, mu, theta, p, i + 5, t), type = "l", lwd = 2, col = "dodgerblue2")
 
 ## Estimating parameters
 m <- em_itnb(

@@ -12,14 +12,15 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // em_itnb_cpp
-Rcpp::List em_itnb_cpp(const arma::vec& x, const arma::vec& xi, const double& mu_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const int& steps, const bool& fd, const double& steps_fd, const int& trace, const bool& save_trace);
-RcppExport SEXP _itnb_em_itnb_cpp(SEXP xSEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP stepsSEXP, SEXP fdSEXP, SEXP steps_fdSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
+Rcpp::List em_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& yi, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const int& steps, const bool& exact, const int& trace, const bool& save_trace);
+RcppExport SEXP _itnb_em_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP yiSEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type xi(xiSEXP);
-    Rcpp::traits::input_parameter< const double& >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type yi(yiSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type beta_0(beta_0SEXP);
     Rcpp::traits::input_parameter< const double& >::type theta_0(theta_0SEXP);
     Rcpp::traits::input_parameter< const double& >::type p_0(p_0SEXP);
     Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
@@ -28,11 +29,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int& >::type iteration_max(iteration_maxSEXP);
     Rcpp::traits::input_parameter< const double& >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< const int& >::type steps(stepsSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type fd(fdSEXP);
-    Rcpp::traits::input_parameter< const double& >::type steps_fd(steps_fdSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type exact(exactSEXP);
     Rcpp::traits::input_parameter< const int& >::type trace(traceSEXP);
     Rcpp::traits::input_parameter< const bool& >::type save_trace(save_traceSEXP);
-    rcpp_result_gen = Rcpp::wrap(em_itnb_cpp(x, xi, mu_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, steps, fd, steps_fd, trace, save_trace));
+    rcpp_result_gen = Rcpp::wrap(em_itnb_cpp(X, y, yi, beta_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace));
     return rcpp_result_gen;
 END_RCPP
 }

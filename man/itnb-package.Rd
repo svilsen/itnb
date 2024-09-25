@@ -2,7 +2,6 @@
 % Please edit documentation in R/itnb-package.R
 \docType{package}
 \name{itnb-package}
-\alias{itnb}
 \alias{itnb-package}
 \title{itnb: Inlfated Truncated Negative Binomial Regression}
 \description{
