@@ -16,10 +16,10 @@ double loglikelihood(const arma::mat & X, const arma::vec & y, const arma::vec &
         //
         const arma::rowvec & x_n = X.row(n);
         const arma::vec mu_n = x_n * beta;
-        const double & mu_ = mu_n[0];
+        const double & mu = mu_n[0];
 
         //
-        d += ditnb_cpp(y[n], mu_, theta, p, i, t);
+        d += ditnb_cpp(y[n], mu, theta, p, i, t);
     }
 
     return d;
@@ -32,10 +32,10 @@ void update_z(arma::vec & z, const arma::mat & X, const arma::vec & y, const arm
         //
         const arma::rowvec & x_n = X.row(n);
         const arma::vec mu_n = x_n * beta;
-        const double & mu_ = mu_n[0];
+        const double & mu = mu_n[0];
 
         //
-        double d_n = std::exp(ditnb_cpp(y[n], mu_, theta, 0.0, i, t));
+        double d_n = std::exp(ditnb_cpp(y[n], mu, theta, 0.0, i, t));
         z[n] = (p * yi[n]) / (p * yi[n] + (1.0 - p) * d_n);
     }
 }
@@ -68,6 +68,17 @@ double beta_derivative_integrand(const double & s, const double & t, const doubl
     return r;
 }
 
+double beta_derivative_rectangle(const double & a, const double & b, const double & theta, const int & t, const int & N) {
+    //
+    const double delta_x = (b - a) / N;
+    double i = 0.0;
+    for (int n = 0; n < N; n++) {
+        i += beta_derivative_integrand(a + n * delta_x, t, theta) * delta_x;
+    }
+
+    return i;
+}
+
 double beta_derivative_boole(const double & a, const double & b, const double & theta, const int & t, const int & N) {
     //
     const double delta_x = (b - a) / N;
@@ -87,13 +98,13 @@ double beta_derivative_boole(const double & a, const double & b, const double & 
     return scale_x * i;
 }
 
-class RL_EXACT : public Functor {
+class EM : public Functor {
 public:
     // Parameters
     arma::vec z;
 
     // Constructor
-    RL_EXACT(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_) : z(z_), X(X_), y(y_), yi(yi_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_) { }
+    EM(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_) : z(z_), X(X_), y(y_), yi(yi_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_) { }
 
     // Functor / objective function
     double operator()(const arma::vec & par) override {
@@ -108,67 +119,63 @@ public:
             const arma::vec mu_n = x_n * beta;
             double mu = mu_n[0];
 
-            if (mu < (t + 1)) {
-                mu = t + 1;
+            if (mu < 1e-8) {
+                mu = 1e-8; // t + 1;
             }
 
-            d += (1.0 - z[n]) * ditnb_cpp(y[n], mu, theta, 0.0, i, t);
+            d += (z[n] - 1.0) * ditnb_cpp(y[n], mu, theta, 0.0, i, t);
         }
 
-        return -d;
+        return d;
     }
 
     // Gradient function
     void Gradient(const arma::vec & par, arma::vec & gr) override {
         //
+        gr = arma::zeros(M + 1);
         if (exact) {
             const arma::vec & beta = par.head(M);
             const double & theta = par[M];
 
-            gr = arma::zeros(M + 1);
             for (int n = 0; n < N; n++) {
                 //
                 const arma::rowvec & x_n = X.row(n);
                 const arma::vec mu_n = x_n * beta;
                 double mu = mu_n[0];
 
-                if (mu < (t + 1)) {
-                    mu = t + 1;
+                if (mu < 1e-8) {
+                    mu = 1e-8; // t + 1;
                 }
 
                 ////
                 const double & mu_theta = mu + theta;
                 const double & mu_theta_i = 1.0 / mu_theta;
 
-                const double & x_theta = y[n] + theta;
+                const double & y_theta = y[n] + theta;
 
-                //// Location
-                double gr_beta = (z[n] - 1.0) * (y[n] / mu - x_theta * mu_theta_i);
+                ////
+                double gr_beta = (z[n] - 1.0) * (y[n] / mu - y_theta * mu_theta_i);
+                double gr_theta = (z[n] - 1.0) * (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
                 if (t > -1) {
-                    const double & b_ = std::exp(R::pbeta(mu * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
+                    const double & b = std::exp(R::pbeta(mu * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
 
                     //// Location
-                    const double & b_mu_n_ = std::pow(mu, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
-                    const double & I_mu_ = b_mu_n_ / b_;
+                    const double & b_mu_n = std::pow(mu, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
+                    const double & I_mu = b_mu_n / b;
 
-                    gr_beta += (z[n] - 1.0) * (-I_mu_);
+                    gr_beta += (z[n] - 1.0) * (-I_mu);
+
+                    //// Overdispersion
+                    const double & b_t_f = std::pow(mu, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
+                    const double & b_t_i = beta_derivative_boole(0.0, mu * mu_theta_i, theta, t, steps);
+                    const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
+
+                    const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
+                    gr_theta += (z[n] - 1.0) * (-I_theta);
                 }
 
                 for (int m = 0; m < M; m++) {
                     gr[m] += gr_beta * x_n[m];
-                }
-
-                //// Overdispersion
-                double gr_theta = (z[n] - 1.0) * (1.0 + std::log(theta) - std::log(mu_theta) - x_theta * mu_theta_i + R::digamma(x_theta) - R::digamma(theta));
-                if (t > -1) {
-                    const double & b_ = std::exp(R::pbeta(mu * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
-
-                    const double & b_t_f_ = std::pow(mu, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
-                    const double & b_t_i_ = beta_derivative_boole(0.0, mu * mu_theta_i, theta, t, steps);
-                    const double & b_t_d_ = R::digamma(theta) - R::digamma(t + 1.0 + theta);
-
-                    const double & I_theta_ = (b_t_i_ - b_t_f_) / b_ - b_t_d_;
-                    gr_theta += (z[n] - 1.0) * (-I_theta_);
                 }
 
                 gr[M] += gr_theta;
@@ -224,16 +231,17 @@ void optimise_itnb(
 
     //
     arma::vec pars_j = arma::vec(M + 1);
+    arma::vec pars_j_old = pars_j;
+
     pars_j.head(M) = beta_j;
     pars_j[M] = theta_j;
 
     //
-    Roptim<RL_EXACT> opt("L-BFGS-B");
-    RL_EXACT r_log_likelihood(X, y, yi, z, i, t, steps, exact);
+    Roptim<EM> opt("L-BFGS-B");
+    EM r_log_likelihood(X, y, yi, z, i, t, steps, exact);
 
     //
-    arma::vec lb = arma::ones(M + 1);
-    lb.head(M) = (-HUGE_VAL) * arma::ones(M);
+    arma::vec lb = (-HUGE_VAL) * arma::ones(M + 1);
     lb[M] = 1e-8;
 
     opt.set_lower(lb);
@@ -251,7 +259,6 @@ void optimise_itnb(
         const double p_j_old = p_j;
 
         //
-        arma::vec pars_j_old = arma::vec(M + 1);
         pars_j_old.head(M) = beta_j;
         pars_j_old[M] = theta_j;
 
@@ -276,7 +283,7 @@ void optimise_itnb(
         loglike_j = loglikelihood(X, y, beta_j, theta_j, p_j, i, t, N);
         delta_loglike_j = loglike_j - loglike_j_old;
 
-        if (delta_loglike_j < -1e-8) {
+        if (delta_loglike_j < 0.0) {
             not_converged = false;
             convergence_flag = "DECREASING LIKELIHOOD DETECTED.";
 
@@ -339,8 +346,8 @@ Rcpp::List em_itnb_cpp(
 
     //
     int j = 0;
-    bool not_converged = true;
-    std::string convergence_flag = "";
+    bool not_converged;
+    std::string convergence_flag;
 
     //
     double p_j = p_0;
