@@ -44,32 +44,41 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 
     ##
     p <- mean(yi, na.rm = TRUE)
-    m <- glm.nb(y[y != i, , drop = FALSE] ~ -1 + X[y != i, , drop = FALSE], link = "identity")
+    if (link == "identity") {
+        m <- glm.nb(y[(y != i) & (y > 0), , drop = FALSE] ~ -1 + X[(y != i) & (y > 0), , drop = FALSE], link = "identity")
+    }
+    else if (link == "log") {
+        m <- glm.nb(y[y != i, , drop = FALSE] ~ -1 + X[y != i, , drop = FALSE], link = "log")
+    }
+    else if (link == "sqrt") {
+        m <- glm.nb(y[y != i, , drop = FALSE] ~ -1 + X[y != i, , drop = FALSE], link = "sqrt")
+    }
 
     beta <- coef(m) |> unname() |> as.matrix()
-    theta <- m$theta
+    theta <- m[["theta"]]
 
     ##
     if ((i < 0) || (i <= t)) {
         res <- mle_itnb_cpp(
-            x = y, xi = yi,
-            mu_0 = mu, theta_0 = theta, p_0 = p,
+            X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+            beta_0 = beta, theta_0 = theta, p_0 = p,
             i = i, t = t,
-            iteration_min = control$iteration_min, iteration_max = control$iteration_max,
-            tolerance = control$tolerance, steps = control$steps,
-            exact = control$exact,
-            trace = control$trace, save_trace = control$save_trace
+            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+            steps = control[["steps"]], exact = control[["exact"]],
+            trace = control[["trace"]]
         )
+
+        res[["trace"]] <- NA
     }
     else if ((t < 0) || (i > t)) {
-        res <- itnb:::em_itnb_cpp(
+        res <- em_itnb_cpp(
             X = X, y = y, yi = yi,
             beta_0 = beta, theta_0 = theta, p_0 = p,
             i = i, t = t,
-            iteration_min = control$iteration_min, iteration_max = control$iteration_max,
-            tolerance = control$tolerance,
-            steps = control$steps, exact = control$exact,
-            trace = control$trace, save_trace = control$save_trace
+            iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+            steps = control[["steps"]], exact = control[["exact"]],
+            trace = control[["trace"]], save_trace = control[["save_trace"]]
         )
     }
     else {
@@ -86,6 +95,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 #' @param method String: indicating the method used to optimise the parameters (currently only accepts \code{method = 'em'}).
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
 #' @param tolerance Numeric (> 0): Convergence tolerance.
+#' @param lambda Numeric (> 0): Vector of penalisation constants (see details).
 #' @param iteration_min Numeric (>= 0): The minimum number of allowed iterations.
 #' @param iteration_max Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.
 #' @param steps Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.
@@ -93,16 +103,21 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 #' @param save_data TRUE/FALSE: should the data be stored in the return object?
 #' @param save_trace TRUE/FALSE: should the entire trace be stored in the return object?
 #'
-#' @return A list of default arguments for the \link{em_itnb} function.
+#' @details The vector of penalisation constants, \code{lambda}, can be set using one or two elements. If a single element is provided, the penalisation
+#' constant is fixed in every iteration of the EM-algorithm; however, if two elements are provided, the first is used as the initial penalisation constant, while
+#' the second is used to scale the penalisation in every iteration, creating a sequence of penalisation constants.
+#' NB: if the data does not contain an inflation point, or if the inflation point is smaller than the truncation point, then lambda should be set to zero.
+#'
+#' @return A list of default arguments for the \link{itnb} function.
 #' @export
-itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_min = 5, iteration_max = 10000, steps = 100, exact = FALSE, save_data = TRUE, save_trace = TRUE) {
+itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, lambda = c(0.1, 0.001), iteration_min = 5, iteration_max = 10000, steps = 100, exact = FALSE, save_data = TRUE, save_trace = TRUE) {
     if (!is.character(method)) {
         stop("'method' has to be a string.")
     }
     method <- tolower(method)
 
     if (!(method %in% c("em", "expectation-maximisation", "expectation-maximization"))) {
-        stop("'method' has be set to 'em' -- this option is included for future proofing.")
+        stop("'method' has be set to 'em' -- this option is included for future proofing, and should not be used at present.")
     }
 
     ##
@@ -118,6 +133,18 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 
     if (tolerance < .Machine$double.eps) {
         stop("'tolerance' has to be bigger than two times the machine epsilon.")
+    }
+
+    ##
+    if (!any(is.numeric(lambda))) {
+        stop("'lambda' has to be numeric.")
+    }
+
+    if (length(lambda) < 2) {
+        lambda <- c(lambda, 1)
+    }
+    else if (length(lambda) > 2) {
+        lambda <- lambda[seq_len(2)]
     }
 
     ##
@@ -158,7 +185,7 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 
     ##
     res <- list(
-        method = method, trace = trace, tolerance = tolerance,
+        method = method, trace = trace, tolerance = tolerance, lambda = lambda,
         iteration_max = iteration_max, iteration_min = iteration_min,
         steps = steps, exact = exact,
         save_data = save_data, save_trace = save_trace
@@ -176,7 +203,7 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 #' @param data A data-set, supplied as a \link{data.frame} (or \link[tibble]{tibble}).
 #' @param i Numeric (i >= 0): The inflation point.
 #' @param t Numeric (t >= 0): The truncation point.
-#' @param link String indicating the link function, currently limited to 'log', 'sqrt', or 'identity'.
+#' @param link String indicating the link function, currently limited to 'log', 'sqrt', or 'identity'. NB: currently only 'identity' is implemented.
 #' @param control List: A control object, see \link{itnb_control} for details.
 #'
 #' @return An object of class \link{itnb-object}.
@@ -222,63 +249,58 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "ident
     formula <- strip_terms(formula)
 
     ##
-    if (is.null(i) & is.null(t)) {
+    if ((is.null(i) | (i < 0)) & (is.null(t) | (t < 0))) {
         ##
         warning("When both 'i' and 't' are 'NULL' the problem reduces to a regular negative binomial regression; see the 'glm.nb' function from the 'MASS' package.")
+    }
 
-        ##
-        res <- glm.nb(formula = formula, data = data, link = "identity")
-        return(res)
+    ##
+    #
+    X <- model.matrix(formula, data)
+
+    #
+    y <- model.response(model.frame(formula, data))
+    y <- as.matrix(y, nrow = nrow(data))
+
+    ##
+    #
+    res <- itnb_matrix(X = X, y = y, i = i, t = t, link = "identity", control = control)
+
+    ##
+    #
+    if (keep_formula) {
+        res[["formula"]] <- formula
     }
     else {
-        ##
-        #
-        X <- model.matrix(formula, data)
-
-        #
-        y <- model.response(model.frame(formula, data))
-        y <- as.matrix(y, nrow = nrow(data))
-
-        ##
-        #
-        res <- itnb_matrix(X = X, y = y, i = i, t = t, link = "identity", control = control)
-
-        ##
-        #
-        if (keep_formula) {
-            res[["formula"]] <- formula
-        }
-        else {
-            res[["formula"]] <- NA
-        }
-
-        #
-        if (control[["save_trace"]]) {
-            res[["trace"]] <- do.call("cbind", res[["trace"]]) |> as.data.frame()
-            names(res[["trace"]])[grep("V", names(res[["trace"]]))] <- colnames(X)
-            res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
-        }
-        else {
-            res[["trace"]] <- NA
-        }
-
-        #
-        if (control$save_data) {
-            res[["data"]] <- list(X = X, y = y)
-        }
-        else {
-            res[["data"]] <- NA
-        }
-
-        #
-        if (res[["converged"]]) {
-            res[["flag"]] <- NA
-        }
-
-        ##
-        class(res) <- "itnb"
-        return(res)
+        res[["formula"]] <- NA
     }
+
+    #
+    if (control[["save_trace"]] & !all(is.na(res[["trace"]]))) {
+        res[["trace"]] <- do.call("cbind", res[["trace"]]) |> as.data.frame()
+        names(res[["trace"]])[grep("V", names(res[["trace"]]))] <- colnames(X)
+        res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
+    }
+    else {
+        res[["trace"]] <- NA
+    }
+
+    #
+    if (control$save_data) {
+        res[["data"]] <- list(X = X, y = y)
+    }
+    else {
+        res[["data"]] <- NA
+    }
+
+    #
+    if (res[["converged"]]) {
+        res[["flag"]] <- NA
+    }
+
+    ##
+    class(res) <- "itnb"
+    return(res)
 }
 
 #' Summary of an inflated and truncated negative binomial regression model fit

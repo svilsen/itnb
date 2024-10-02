@@ -32,7 +32,7 @@ itnb(
 
 \item{t}{Numeric (t >= 0): The truncation point.}
 
-\item{link}{String indicating the link function, currently limited to 'log', 'sqrt', or 'identity'.}
+\item{link}{String indicating the link function, currently limited to 'log', 'sqrt', or 'identity'. NB: currently only 'identity' is implemented.}
 
 \item{control}{List: A control object, see \link{itnb_control} for details.}
 }
