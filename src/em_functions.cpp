@@ -184,16 +184,7 @@ void optimise_itnb(
     convergence_flag = "";
 
     //
-    Link LO = Link();
-    if (link == "identity") {
-        LO = link_identity();
-    }
-    else if (link == "sqrt") {
-        LO = link_sqrt();
-    }
-    else {
-        LO = link_log();
-    }
+    Link LO(link);
 
     //
     arma::vec z(N);

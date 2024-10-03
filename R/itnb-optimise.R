@@ -64,7 +64,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         res <- mle_itnb_cpp(
             X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
             beta_0 = beta, theta_0 = theta, p_0 = p,
-            i = i, t = t,
+            i = i, t = t, link = link,
             tolerance = control[["tolerance"]], lambda = control[["lambda"]],
             steps = control[["steps"]], exact = control[["exact"]],
             trace = control[["trace"]]
@@ -76,7 +76,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         res <- em_itnb_cpp(
             X = X, y = y, yi = yi,
             beta_0 = beta, theta_0 = theta, p_0 = p,
-            i = i, t = t,
+            i = i, t = t, link = link,
             iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
             tolerance = control[["tolerance"]], lambda = control[["lambda"]],
             steps = control[["steps"]], exact = control[["exact"]],
@@ -266,7 +266,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "ident
 
     ##
     #
-    res <- itnb_matrix(X = X, y = y, i = i, t = t, link = "identity", control = control)
+    res <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
 
     ##
     #
