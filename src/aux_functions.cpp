@@ -2,25 +2,24 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include "rdp_functions.hpp"
+#include "link_functions.hpp"
 
 //// Log-likelihood
-double loglikelihood(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N) {
+double loglikelihood(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
     //
     double d = 0.0;
     for (int n = 0; n < N; n++) {
-        //
         const arma::rowvec & x_n = X.row(n);
-        const arma::vec mu_n = x_n * beta;
-        const double & mu = mu_n[0];
+        const arma::vec eta_n = x_n * beta;
+        const double & mu_n = LO.link_inv(eta_n[0]);
 
-        //
-        d += ditnb_cpp(y[n], mu, theta, p, i, t);
+        d += ditnb_cpp(y[n], mu_n, theta, p, i, t);
     }
 
     return d;
 }
 
-////
+//// Derivative of beta function
 double beta_derivative_integrand(const double & s, const double & t, const double & theta) {
     //
     const double s_rev = 1.0 - s;

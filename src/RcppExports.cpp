@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // em_itnb_cpp
-Rcpp::List em_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& yi, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const int& iteration_min, const int& iteration_max, const double& tolerance, const arma::vec& lambda, const int& steps, const bool& exact, const int& trace, const bool& save_trace);
-RcppExport SEXP _itnb_em_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP yiSEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP lambdaSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
+Rcpp::List em_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& yi, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const std::string& link, const int& iteration_min, const int& iteration_max, const double& tolerance, const arma::vec& lambda, const int& steps, const bool& exact, const int& trace, const bool& save_trace);
+RcppExport SEXP _itnb_em_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP yiSEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP linkSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP lambdaSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,6 +25,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type p_0(p_0SEXP);
     Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
     Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type link(linkSEXP);
     Rcpp::traits::input_parameter< const int& >::type iteration_min(iteration_minSEXP);
     Rcpp::traits::input_parameter< const int& >::type iteration_max(iteration_maxSEXP);
     Rcpp::traits::input_parameter< const double& >::type tolerance(toleranceSEXP);
@@ -33,7 +34,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool& >::type exact(exactSEXP);
     Rcpp::traits::input_parameter< const int& >::type trace(traceSEXP);
     Rcpp::traits::input_parameter< const bool& >::type save_trace(save_traceSEXP);
-    rcpp_result_gen = Rcpp::wrap(em_itnb_cpp(X, y, yi, beta_0, theta_0, p_0, i, t, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace));
+    rcpp_result_gen = Rcpp::wrap(em_itnb_cpp(X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -86,8 +87,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // mle_itnb_cpp
-Rcpp::List mle_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const double& tolerance, const arma::vec& lambda, const int& steps, const bool& exact, const int& trace);
-RcppExport SEXP _itnb_mle_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP toleranceSEXP, SEXP lambdaSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP) {
+Rcpp::List mle_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const std::string& link, const double& tolerance, const arma::vec& lambda, const int& steps, const bool& exact, const int& trace);
+RcppExport SEXP _itnb_mle_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP linkSEXP, SEXP toleranceSEXP, SEXP lambdaSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -98,22 +99,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type p_0(p_0SEXP);
     Rcpp::traits::input_parameter< const int& >::type i(iSEXP);
     Rcpp::traits::input_parameter< const int& >::type t(tSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type link(linkSEXP);
     Rcpp::traits::input_parameter< const double& >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< const int& >::type steps(stepsSEXP);
     Rcpp::traits::input_parameter< const bool& >::type exact(exactSEXP);
     Rcpp::traits::input_parameter< const int& >::type trace(traceSEXP);
-    rcpp_result_gen = Rcpp::wrap(mle_itnb_cpp(X, y, beta_0, theta_0, p_0, i, t, tolerance, lambda, steps, exact, trace));
+    rcpp_result_gen = Rcpp::wrap(mle_itnb_cpp(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_itnb_em_itnb_cpp", (DL_FUNC) &_itnb_em_itnb_cpp, 16},
+    {"_itnb_em_itnb_cpp", (DL_FUNC) &_itnb_em_itnb_cpp, 17},
     {"_itnb_ritnb_cpp", (DL_FUNC) &_itnb_ritnb_cpp, 6},
     {"_itnb_ditnb_cpp", (DL_FUNC) &_itnb_ditnb_cpp, 6},
     {"_itnb_pitnb_cpp", (DL_FUNC) &_itnb_pitnb_cpp, 6},
-    {"_itnb_mle_itnb_cpp", (DL_FUNC) &_itnb_mle_itnb_cpp, 12},
+    {"_itnb_mle_itnb_cpp", (DL_FUNC) &_itnb_mle_itnb_cpp, 13},
     {NULL, NULL, 0}
 };
 

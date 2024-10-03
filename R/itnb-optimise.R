@@ -59,6 +59,8 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 
     ##
     if ((i < 0) || (i <= t)) {
+        control[["lambda"]] <- c(0, 0)
+
         res <- mle_itnb_cpp(
             X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
             beta_0 = beta, theta_0 = theta, p_0 = p,
@@ -216,7 +218,7 @@ itnb <- function(formula, data = NULL, i = NULL, t = NULL, link = "identity", co
 #' @rdname itnb
 #' @method itnb formula
 #'
-#' @example inst/examples/em_itnb_example.R
+#' @example inst/examples/itnb_example.R
 #'
 #' @export
 itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "identity", control = list()) {
@@ -367,7 +369,7 @@ coef.itnb <- function(object, ...) {
 plot.itnb <- function(x, ...) {
     dots <- list(...)
     if (all(is.na(x[["trace"]]))) {
-        stop("The 'trace' data.frame was not found. Set 'save_trace = TRUE' in the 'em_itnb_control' function, and re-run the optimisation routine.")
+        stop("The 'trace' data.frame was not found. Set 'save_trace = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
     }
 
     itnb_trace <- x[["trace"]]

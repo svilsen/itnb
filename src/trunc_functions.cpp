@@ -5,17 +5,19 @@
 // [[Rcpp::depends(roptim)]]
 
 #include "rdp_functions.hpp"
+#include "link_functions.hpp"
 #include "aux_functions.hpp"
 
 using namespace roptim;
 
-// Negative binomial
+//// Truncated negative binomial parameters
 class MLE: public Functor {
 public:
     double lambda;
 
     // Constructor
-    MLE(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, const double & lambda_) : lambda(lambda_), X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_) { }
+    MLE(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, const double & lambda_, Link & LO_) :
+        lambda(lambda_), X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
     double operator()(const arma::vec & par) override {
@@ -28,21 +30,17 @@ public:
         for (int n = 0; n < N; n++) {
             //
             const arma::rowvec & x_n = X.row(n);
-            const arma::vec mu_n = x_n * beta;
+            const arma::vec eta_n = x_n * beta;
 
-            //
-            double mu = mu_n[0];
-            if (mu < 1e-6) {
-                mu = 1e-6;
-            }
+            const double mu_n = LO.link_inv(eta_n[0]);
 
-            const double e = (mu_n[0] - (t + 1));
+            const double e = (mu_n - (t + 1));
             double g = 0.0;
             if (e < 0) {
                 g = e * e;
             }
 
-            const double d_n = ditnb_cpp(y[n], mu, theta, 0.0, i, t);
+            const double d_n = ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
 
             d += d_n;
             penalisation += lambda * g;
@@ -62,34 +60,30 @@ public:
             for (int n = 0; n < N; n++) {
                 //
                 const arma::rowvec & x_n = X.row(n);
-                const arma::vec mu_n = x_n * beta;
-
-                double mu = mu_n[0];
-                if (mu < 1e-6) {
-                    mu = 1e-6;
-                }
+                const arma::vec eta_n = x_n * beta;
+                const double mu_n = LO.link_inv(eta_n[0]);
 
                 //
-                const double & mu_theta = mu + theta;
+                const double & mu_theta = mu_n + theta;
                 const double & mu_theta_i = 1.0 / mu_theta;
 
                 const double & y_theta = y[n] + theta;
 
                 //
-                double gr_beta = (y[n] / mu - y_theta * mu_theta_i);
+                double gr_beta = (y[n] / mu_n - y_theta * mu_theta_i);
                 double gr_theta = (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
                 if (t > -1) {
-                    const double & b = std::exp(R::pbeta(mu * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
+                    const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
 
                     // Location
-                    const double & b_mu_n = std::pow(mu, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
+                    const double & b_mu_n = std::pow(mu_n, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
                     const double & I_mu = b_mu_n / b;
 
                     gr_beta += (-I_mu);
 
                     // Overdispersion
-                    const double & b_t_f = std::pow(mu, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
-                    const double & b_t_i = beta_derivative_rectangle(0.0, mu * mu_theta_i, theta, t, steps);
+                    const double & b_t_f = std::pow(mu_n, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
+                    const double & b_t_i = beta_derivative_rectangle(0.0, mu_n * mu_theta_i, theta, t, steps);
                     const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
 
                     const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
@@ -99,11 +93,12 @@ public:
                 //
                 for (int m = 0; m < M; m++) {
                     double gr_g = 0.0;
-                    if (mu_n[0] < (t + 1)) {
-                        gr_g = 2.0 * x_n[m] * (mu_n[0] - (t + 1));
+                    if (mu_n < (t + 1)) {
+                        gr_g = 2.0 * (mu_n - (t + 1));
                     }
 
-                    gr[m] += (-gr_beta * x_n[m]) + lambda * gr_g;
+                    const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
+                    gr[m] += (-gr_beta + lambda * gr_g) * gr_mu;
                 }
 
                 //
@@ -133,6 +128,9 @@ private:
 
     //
     bool exact;
+
+    // Link
+    Link LO;
 };
 
 //// Optimiser
@@ -140,13 +138,27 @@ void optimise_tnb(
         arma::vec & beta_j, double & theta_j, const double & p_0, double & loglike_j,
         int & j, bool & not_converged, std::string & convergence_flag,
         const arma::mat & X, const arma::vec & y,
-        const int & i, const int & t, const int & N, const int & M,
+        const int & i, const int & t, const std::string & link,
+        const int & N, const int & M,
         const double & tolerance, const arma::vec & lambda,
         const int & steps, const bool & exact,
         const int & trace
 ) {
+    //
     not_converged = true;
     convergence_flag = "";
+
+    //
+    Link LO = Link();
+    if (link == "identity") {
+        LO = link_identity();
+    }
+    else if (link == "sqrt") {
+        LO = link_sqrt();
+    }
+    else {
+        LO = link_log();
+    }
 
     //
     arma::vec pars_j = arma::vec(M + 1);
@@ -155,7 +167,7 @@ void optimise_tnb(
 
     //
     Roptim<MLE> opt("L-BFGS-B");
-    MLE r_log_likelihood(X, y, i, t, steps, exact, lambda[0]);
+    MLE r_log_likelihood(X, y, i, t, steps, exact, lambda[0], LO);
 
     //
     arma::vec lb = (-HUGE_VAL) * arma::ones(M + 1);
@@ -173,7 +185,7 @@ void optimise_tnb(
     theta_j = pars_j[M];
 
     //
-    loglike_j = loglikelihood(X, y, beta_j, theta_j, p_0, i, t, N);
+    loglike_j = loglikelihood(X, y, beta_j, theta_j, p_0, i, t, N, LO);
 }
 
 
@@ -182,7 +194,7 @@ void optimise_tnb(
 Rcpp::List mle_itnb_cpp(
         const arma::mat & X, const arma::vec & y,
         const arma::vec & beta_0, const double & theta_0, const double & p_0,
-        const int & i, const int & t,
+        const int & i, const int & t, const std::string & link,
         const double & tolerance, const arma::vec & lambda,
         const int & steps, const bool & exact,
         const int & trace
@@ -207,7 +219,7 @@ Rcpp::List mle_itnb_cpp(
     optimise_tnb(
         beta_j, theta_j, p_0, loglike_j,
         j, not_converged, convergence_flag,
-        X, y, i, t, N, M,
+        X, y, i, t, link, N, M,
         tolerance, lambda,
         steps, exact, trace
     );

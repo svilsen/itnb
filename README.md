@@ -43,11 +43,6 @@ m <- itnb(
 ## Plotting trace of EM-algorithm 
 plot(m, log = "x")
 
-## Percentage errors
-100 * (m$mu - mu) / mu
-100 * (m$theta - theta) / theta
-100 * (m$p - p) / p
-
 ## Sampling CI's
 ci_p <- simulate_ci(
     m, 
