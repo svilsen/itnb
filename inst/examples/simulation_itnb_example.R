@@ -26,3 +26,9 @@ m <- itnb(
 )
 
 #
+simulate_ci(
+    object = m,
+    level = 0.95,
+    nr_simulations = 200,
+    parametric = FALSE
+)
