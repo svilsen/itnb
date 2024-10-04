@@ -11,6 +11,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// lm_fast_cpp
+arma::vec lm_fast_cpp(const arma::mat& X, const arma::vec& y);
+RcppExport SEXP _itnb_lm_fast_cpp(SEXP XSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(lm_fast_cpp(X, y));
+    return rcpp_result_gen;
+END_RCPP
+}
 // em_itnb_cpp
 Rcpp::List em_itnb_cpp(const arma::mat& X, const arma::vec& y, const arma::vec& yi, const arma::vec& beta_0, const double& theta_0, const double& p_0, const int& i, const int& t, const std::string& link, const int& iteration_min, const int& iteration_max, const double& tolerance, const arma::vec& lambda, const int& steps, const bool& exact, const int& trace, const bool& save_trace);
 RcppExport SEXP _itnb_em_itnb_cpp(SEXP XSEXP, SEXP ySEXP, SEXP yiSEXP, SEXP beta_0SEXP, SEXP theta_0SEXP, SEXP p_0SEXP, SEXP iSEXP, SEXP tSEXP, SEXP linkSEXP, SEXP iteration_minSEXP, SEXP iteration_maxSEXP, SEXP toleranceSEXP, SEXP lambdaSEXP, SEXP stepsSEXP, SEXP exactSEXP, SEXP traceSEXP, SEXP save_traceSEXP) {
@@ -111,6 +123,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_itnb_lm_fast_cpp", (DL_FUNC) &_itnb_lm_fast_cpp, 2},
     {"_itnb_em_itnb_cpp", (DL_FUNC) &_itnb_em_itnb_cpp, 17},
     {"_itnb_ritnb_cpp", (DL_FUNC) &_itnb_ritnb_cpp, 6},
     {"_itnb_ditnb_cpp", (DL_FUNC) &_itnb_ditnb_cpp, 6},

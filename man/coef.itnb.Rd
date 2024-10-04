@@ -7,7 +7,7 @@
 \method{coef}{itnb}(object, ...)
 }
 \arguments{
-\item{object}{An \link{itnb-object}.}
+\item{object}{\link{itnb-object}.}
 
 \item{...}{Additional arguments (see details).}
 }

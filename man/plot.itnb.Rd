@@ -2,15 +2,17 @@
 % Please edit documentation in R/itnb-optimise.R
 \name{plot.itnb}
 \alias{plot.itnb}
-\title{Plot parameter trace of an \link{itnb-object}}
+\title{Plot the trace of an \link{itnb-object}}
 \usage{
-\method{plot}{itnb}(x, ...)
+\method{plot}{itnb}(x, which = NULL, ...)
 }
 \arguments{
-\item{x}{An \link{itnb-object}.}
+\item{x}{\link{itnb-object}.}
+
+\item{which}{String: Indicating which trace to show (either the log-likelihood or a parameter). If left \code{NULL}, the function shows all traces.}
 
 \item{...}{Additional arguments passed to the \link[graphics]{plot} function.}
 }
 \description{
-A function plotting the EM parameter trace returned by the \link{itnb} function. Note: the function can only be used if the argument \code{save_trace} in the \link{itnb_control} function was set to \code{TRUE}.
+A function plotting the EM parameter trace returned by the \link{itnb} function. NB: the function can only be used if the argument \code{save_trace} in the \link{itnb_control} function was set to \code{TRUE}, and the inflation cannot be separated from the truncated negative binomial regression model.
 }

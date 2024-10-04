@@ -221,6 +221,7 @@ Rcpp::List mle_itnb_cpp(
         Rcpp::Named("data") = 0,
         Rcpp::Named("i") = i,
         Rcpp::Named("t") = t,
+        Rcpp::Named("link") = link,
         Rcpp::Named("loglikelihood") = loglike_j,
         Rcpp::Named("beta") = beta_j,
         Rcpp::Named("theta") = theta_j,

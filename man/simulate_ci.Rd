@@ -8,17 +8,19 @@
 simulate_ci(
   object,
   level = 0.95,
-  nr_simulations = 2000,
+  nr_simulations = 200,
   parametric = FALSE,
-  trace = 0
+  trace = 0,
+  control = list()
 )
 
 \method{simulate_ci}{itnb}(
   object,
   level = 0.95,
-  nr_simulations = 2000,
+  nr_simulations = 200,
   parametric = FALSE,
-  trace = 0
+  trace = 0,
+  control = list()
 )
 }
 \arguments{
@@ -31,21 +33,42 @@ simulate_ci(
 \item{parametric}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
 
 \item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
+
+\item{control}{List: A control object, see \link{itnb_control} for details, passed to the \link{itnb} function.}
 }
 \value{
 If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 }
 \description{
-Simulated confidence envelopes of the parameters estimated by the \link{em_itnb} function.
+Simulated confidence envelopes of the parameters estimated by the \link{itnb} function.
 }
 \examples{
-n = 2000
-i = 94
-t = 93
-mu = 100
-theta = 10
-p = 0.2
+#
+n <- 2000
+i <- 2
+t <- 1
 
-x <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
-m <- em_itnb(x = x, i = i, t = t, control = em_itnb_control(trace = 100))
+#
+x <- sort(runif(n, 0, 4))
+
+beta <- c(3, 2)
+mu <- exp(cbind(1, x) \%*\% beta)
+
+theta <- 10
+p <- 0.2
+
+#
+y <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+data <- data.frame(y = y, x = x)
+
+#
+m <- itnb(
+    y ~ x,
+    data = data,
+    i = i,
+    t = t,
+    link = "log"
+)
+
+#
 }

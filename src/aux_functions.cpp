@@ -60,3 +60,12 @@ double beta_derivative_boole(const double & a, const double & b, const double & 
     const double scale_x = (2.0 / 45.0) * delta_x;
     return scale_x * i;
 }
+
+
+////
+// [[Rcpp::export]]
+arma::vec lm_fast_cpp(const arma::mat & X, const arma::vec & y) {
+    arma::vec beta = arma::solve(X, y, arma::solve_opts::fast);
+    return beta;
+}
+

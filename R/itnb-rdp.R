@@ -21,7 +21,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     if (!is.numeric(mu)) {
         stop("'mu' has to be numeric.")
     }
-    else if (!((length(mu) == length(x)) || length(mu) == 1)) {
+    else if (!((length(mu) == n) || length(mu) == 1)) {
         stop("'mu' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(mu < 0.0)) {
@@ -31,7 +31,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     if (!is.numeric(theta)) {
         stop("'theta' has to be numeric.")
     }
-    else if (!((length(theta) == length(x)) || length(theta) == 1)) {
+    else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(theta < 0.0)) {
@@ -41,7 +41,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     if (!is.numeric(p)) {
         stop("'p' has to be numeric.")
     }
-    else if (!((length(p) == length(x)) || length(p) == 1)) {
+    else if (!((length(p) == n) || length(p) == 1)) {
         stop("'p' needs to have length 1, or be the same length as 'x'.")
     }
     else if (!(all(p >= 0.0) && all(p <= 1.0))) {
@@ -97,6 +97,8 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
 #' @return A vector the size as \code{x} containing the probability of each value.
 #' @export
 ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
+    n <- length(x)
+
     ##
     if (!is.numeric(x)) {
         stop("'x' has to be numeric.")
@@ -106,7 +108,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(mu)) {
         stop("'mu' has to be numeric.")
     }
-    else if (!((length(mu) == length(x)) || length(mu) == 1)) {
+    else if (!((length(mu) == n) || length(mu) == 1)) {
         stop("'mu' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(mu < 0.0)) {
@@ -116,7 +118,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(theta)) {
         stop("'theta' has to be numeric.")
     }
-    else if (!((length(theta) == length(x)) || length(theta) == 1)) {
+    else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(theta < 0.0)) {
@@ -126,7 +128,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(p)) {
         stop("'p' has to be numeric.")
     }
-    else if (!((length(p) == length(x)) || length(p) == 1)) {
+    else if (!((length(p) == n) || length(p) == 1)) {
         stop("'p' needs to have length 1, or be the same length as 'x'.")
     }
     else if (!(all(p >= 0.0) && all(p <= 1.0))) {
@@ -197,6 +199,8 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
 #' @return A vector the size as \code{q} containing the cumulative probability of each value.
 #' @export
 pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
+    n <- length(q)
+
     ##
     if (!is.numeric(q)) {
         stop("'q' has to be numeric.")
@@ -206,7 +210,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(mu)) {
         stop("'mu' has to be numeric.")
     }
-    else if (!((length(mu) == length(x)) || length(mu) == 1)) {
+    else if (!((length(mu) == n) || length(mu) == 1)) {
         stop("'mu' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(mu < 0.0)) {
@@ -216,7 +220,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(theta)) {
         stop("'theta' has to be numeric.")
     }
-    else if (!((length(theta) == length(x)) || length(theta) == 1)) {
+    else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
     else if (any(theta < 0.0)) {
@@ -226,7 +230,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     if (!is.numeric(p)) {
         stop("'p' has to be numeric.")
     }
-    else if (!((length(p) == length(x)) || length(p) == 1)) {
+    else if (!((length(p) == n) || length(p) == 1)) {
         stop("'p' needs to have length 1, or be the same length as 'x'.")
     }
     else if (!(all(p >= 0.0) && all(p <= 1.0))) {

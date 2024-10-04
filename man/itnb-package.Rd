@@ -3,9 +3,9 @@
 \docType{package}
 \name{itnb-package}
 \alias{itnb-package}
-\title{itnb: Inlfated Truncated Negative Binomial Regression}
+\title{itnb: Inflated And Truncated Negative Binomial Regression}
 \description{
-An inflated and truncated negative binomial regression model, with parameter estimation by the EM-algorithm, and confidence envelopes by either the parametric and non-parametric bootstrap.
+An inflated and truncated negative binomial regression model, with parameter estimation by the EM-algorithm, and confidence envelopes by either the parametric or non-parametric bootstrap.
 }
 \author{
 \strong{Maintainer}: Søren B. Vilsen \email{svilsen@math.aau.dk}
