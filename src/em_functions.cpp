@@ -330,16 +330,16 @@ Rcpp::List em_itnb_cpp(
     arma::mat beta_trace;
     arma::vec theta_trace, p_trace, loglike_trace;
     if (save_trace) {
-        beta_trace.set_size(iteration_max, M);
+        beta_trace.set_size(iteration_max + 1, M);
         beta_trace.row(0) = beta_0.t();
 
-        theta_trace.set_size(iteration_max);
+        theta_trace.set_size(iteration_max + 1);
         theta_trace[0] = theta_0;
 
-        p_trace.set_size(iteration_max);
+        p_trace.set_size(iteration_max + 1);
         p_trace[0] = p_0;
 
-        loglike_trace.set_size(iteration_max);
+        loglike_trace.set_size(iteration_max + 1);
         loglike_trace[0] = HUGE_VAL;
     }
 

@@ -9,91 +9,6 @@ strip_terms <- function(formula) {
     return(formula)
 }
 
-##
-itnb_matrix <- function(X, y, i, t, link, control = list()) {
-    control <- do.call(itnb_control, control)
-
-    ##
-    if (is.null(i)) {
-        i <- -1
-    }
-
-    if (!is.numeric(i)) {
-        stop("'i' has to be numeric.")
-    }
-    else if (length(i) != 1) {
-        warning("'i' needs to have length 1, only the first element is used.")
-        i <- i[1]
-    }
-    i <- ceiling(i)
-
-    ##
-    if (is.null(t)) {
-        t <- -1
-    }
-
-    if (!is.numeric(t)) {
-        stop("'t' has to be numeric.")
-    }
-    else if (length(t) != 1) {
-        warning("'t' needs to have length 1, only the first element is used.")
-        t <- t[1]
-    }
-    t <- ceiling(t)
-
-    ## Initial parameters
-    yi <- as.numeric(y == i)
-    p <- mean(yi, na.rm = TRUE)
-
-    if (link == "identity") {
-        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], y[y != i, , drop = FALSE])
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta) - 1)^2)
-    }
-    else if (link == "sqrt") {
-        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], sqrt(y[y != i, , drop = FALSE]))
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta)^2 - 1)^2)
-    }
-    else if (link == "log") {
-        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], log(y[y != i, , drop = FALSE]))
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / exp(X[y != i, , drop = FALSE] %*% beta) - 1)^2)
-    }
-    else {
-        stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
-    }
-
-    ##
-    if ((i < 0) | (i <= t)) {
-        control[["lambda"]] <- c(0, 0)
-
-        res <- mle_itnb_cpp(
-            X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
-            beta_0 = beta, theta_0 = theta, p_0 = p,
-            i = i, t = t, link = link,
-            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
-            steps = control[["steps"]], exact = control[["exact"]],
-            trace = control[["trace"]]
-        )
-
-        res[["trace"]] <- NA
-    }
-    else if ((t < 0) | (i > t)) {
-        res <- em_itnb_cpp(
-            X = X, y = y, yi = yi,
-            beta_0 = beta, theta_0 = theta, p_0 = p,
-            i = i, t = t, link = link,
-            iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
-            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
-            steps = control[["steps"]], exact = control[["exact"]],
-            trace = control[["trace"]], save_trace = control[["save_trace"]]
-        )
-    }
-    else {
-        stop("How did we get here? Report with code 'itnb-opt-1'.")
-    }
-
-    return(res)
-}
-
 #' Control function for the \link{itnb} function.
 #'
 #' @description Creates a list of default options.
@@ -219,6 +134,91 @@ itnb <- function(formula, data = NULL, i = NULL, t = NULL, link = "log", control
     UseMethod("itnb")
 }
 
+##
+itnb_matrix <- function(X, y, i, t, link, control = list()) {
+    control <- do.call(itnb_control, control)
+
+    ##
+    if (is.null(i)) {
+        i <- -1
+    }
+
+    if (!is.numeric(i)) {
+        stop("'i' has to be numeric.")
+    }
+    else if (length(i) != 1) {
+        warning("'i' needs to have length 1, only the first element is used.")
+        i <- i[1]
+    }
+    i <- ceiling(i)
+
+    ##
+    if (is.null(t)) {
+        t <- -1
+    }
+
+    if (!is.numeric(t)) {
+        stop("'t' has to be numeric.")
+    }
+    else if (length(t) != 1) {
+        warning("'t' needs to have length 1, only the first element is used.")
+        t <- t[1]
+    }
+    t <- ceiling(t)
+
+    ## Initial parameters
+    yi <- as.numeric(y == i)
+    p <- mean(yi, na.rm = TRUE)
+
+    if (link == "identity") {
+        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], y[y != i, , drop = FALSE])
+        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta) - 1)^2)
+    }
+    else if (link == "sqrt") {
+        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], sqrt(y[y != i, , drop = FALSE]))
+        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta)^2 - 1)^2)
+    }
+    else if (link == "log") {
+        beta <- lm_fast_cpp(X[y != i, , drop = FALSE], log(y[y != i, , drop = FALSE]))
+        theta <- length(y) / sum((y[y != i, drop = FALSE] / exp(X[y != i, , drop = FALSE] %*% beta) - 1)^2)
+    }
+    else {
+        stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
+    }
+
+    ##
+    if ((i < 0) | (i <= t)) {
+        control[["lambda"]] <- c(0, 0)
+
+        res <- mle_itnb_cpp(
+            X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+            beta_0 = beta, theta_0 = theta, p_0 = p,
+            i = i, t = t, link = link,
+            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+            steps = control[["steps"]], exact = control[["exact"]],
+            trace = control[["trace"]]
+        )
+
+        res[["trace"]] <- NA
+    }
+    else if ((t < 0) | (i > t)) {
+        res <- em_itnb_cpp(
+            X = X, y = y, yi = yi,
+            beta_0 = beta, theta_0 = theta, p_0 = p,
+            i = i, t = t, link = link,
+            iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+            steps = control[["steps"]], exact = control[["exact"]],
+            trace = control[["trace"]], save_trace = control[["save_trace"]]
+        )
+    }
+    else {
+        stop("How did we get here? Report with code 'itnb-opt-1'.")
+    }
+
+    return(res)
+}
+
 #' @rdname itnb
 #' @method itnb formula
 #'
@@ -226,6 +226,8 @@ itnb <- function(formula, data = NULL, i = NULL, t = NULL, link = "log", control
 #'
 #' @export
 itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log", control = list()) {
+    control <- do.call(itnb_control, control)
+
     ## Checks for 'data'
     keep_formula <- TRUE
     if (is.null(data)) {
@@ -280,7 +282,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     }
 
     #
-    if (control[["save_trace"]] & !all(is.na(res[["trace"]]))) {
+    if (control[["save_trace"]]) {
         res[["trace"]] <- do.call("cbind", res[["trace"]]) |> as.data.frame()
         names(res[["trace"]])[grep("V", names(res[["trace"]]))] <- colnames(X)
         res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
@@ -307,33 +309,271 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     return(res)
 }
 
+#' Prediction method for inflated and truncated negative binomial regression models
+#'
+#' @description Predict function of an \link{itnb-object} (an object of class \code{itnb}).
+#'
+#' @param object \link{itnb-object}.
+#' @param ... Additional arguments (see details).
+#'
+#' @details The additional arguments used by the function are '\code{newdata}', and '\code{type}'.
+#' The argument '\code{newdata}' takes a \link{matrix} or \link{data.frame} containing new covariates, or can be set to \code{NULL} returning the fitted values.
+#' The argument '\code{type}' takes a string, either \code{"response"} or \code{"response"}, specifying the scale of the predicted/fitted values.
+#'
+#' @export
+predict.itnb <- function(object, ...) {
+    dots <- list(...)
+
+    ##
+    if (is.null(dots[["type"]])) {
+        type <- "response"
+    }
+    else if (!is.character(dots[["type"]])) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else if (!(dots[["type"]] %in% c("link", "response"))) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else {
+        type <- dots[["type"]]
+    }
+
+    ##
+    if (any(is.null(dots[["newdata"]]))) {
+        if (all(is.na(object[["data"]]))) {
+            stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
+        }
+
+        newdata <- object[["data"]][["X"]]
+    }
+    else {
+        if (all(is.na(as.list(object[["formula"]])))) {
+            newdata <- as.matrix(dots[["newdata"]])
+        }
+        else {
+            #
+            formula <- as.formula(object[["formula"]])
+            formula <- strip_terms(delete.response(terms(formula)))
+
+            #
+            newdata <- dots[["newdata"]]
+            if (!is.data.frame(newdata)) {
+                newdata <- as.data.frame(newdata)
+            }
+
+            #
+            newdata <- model.matrix(formula, newdata)
+        }
+    }
+
+    #
+    link <- object[["link"]]
+
+    beta <- coef(object, par = "beta")
+    pred <- newdata %*% beta
+
+    #
+    if (type == "response") {
+        if (link == "sqrt") {
+            pred <- pred * pred
+        }
+        else if (link == "log") {
+            pred <- exp(pred)
+        }
+    }
+
+    return(pred[,1])
+}
+
+#' @export
+fitted.itnb <- function(object, ...) {
+    dots <- list(...)
+
+    ##
+    if (is.null(dots[["type"]])) {
+        type <- "link"
+    }
+    else if (!is.character(dots[["type"]])) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else if (!(dots[["type"]] %in% c("link", "response"))) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else {
+        type <- dots[["type"]]
+    }
+
+    ##
+    return(predict(object, type = type))
+}
+
+#' Residuals for inflated and truncated negative binomial regression models
+#'
+#' @description Residual function of an \link{itnb-object} (an object of class \code{itnb}).
+#'
+#' @param object \link{itnb-object}.
+#' @param ... Additional arguments (see details).
+#'
+#' @details The additional argument used by the function is '\code{type}'; taking a string, either \code{"response"} or \code{"link"}, specifying the scale
+#' of the residuals.
+#'
+#' @export
+residuals.itnb <- function(object, ...) {
+    dots <- list(...)
+
+    ##
+    if (is.null(dots[["type"]])) {
+        type <- "response"
+    }
+    else if (!is.character(dots[["type"]])) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else if (!(dots[["type"]] %in% c("link", "response"))) {
+        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    }
+    else {
+        type <- dots[["type"]]
+    }
+
+    ##
+    if (all(is.na(object[["data"]]))) {
+        stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
+    }
+    else {
+        X <- object[["data"]][["X"]]
+        y <- object[["data"]][["y"]]
+    }
+
+    ##
+    link <- object[["link"]]
+    if (type == "link") {
+        if (link == "sqrt") {
+            y <- sqrt(y)
+        }
+        else if (link == "log") {
+            y <- log(y)
+        }
+    }
+
+    ##
+    pred <- predict(object, newdata = X, type = type)
+    res <- y[,1] - pred
+
+    return(res)
+}
+
 #' Summary of an inflated and truncated negative binomial regression model fit
 #'
 #' @description Summary function for an \link{itnb-object} (an object of class \code{itnb}).
 #'
 #' @param object \link{itnb-object}.
-#' @param ... Additional arguments (see details).
-#'
-#' @details ...
+#' @param ... Additional arguments are passed to the \link{itnb} and \link{confint.itnb}.
 #'
 #' @return A function summary.
 #' @export
 summary.itnb <- function(object, ...) {
     dots <- list(...)
 
-    return(object)
+    ##
+    level <- dots[["level"]]
+    if (is.null(level)) {
+        level <- 0.95
+    }
+
+    ##
+    nr_simulations <- dots[["nr_simulations"]]
+    if (is.null(nr_simulations)) {
+        nr_simulations <- 250
+    }
+    ##
+    parametric <- dots[["parametric"]]
+    if (is.null(parametric)) {
+        parametric <- FALSE
+    }
+
+    ##
+    trace <- dots[["trace"]]
+    if (is.null(trace)) {
+        trace <- 0
+    }
+
+    ##
+    type <- dots[["type"]]
+    if (is.null(type)) {
+        type <- "response"
+    }
+
+    ##
+    control <- dots[["control"]]
+    if (is.null(control)) {
+        control <- list()
+    }
+
+    ##
+    r <- residuals(object, type = type)
+    f <- fitted.values(object)
+
+    coefs <- coef(object)
+    ci <- confint.itnb(object, level = level, nr_simulations = nr_simulations, parametric = parametric, trace = trace, control = control)
+
+    betas <- coefs[["beta"]] |> rbind(ci[["ci"]][["beta"]][-2,]) |> t() |> structure(.Dimnames = list(c(names(coefs[["beta"]])), c("Estimate", rownames(ci[["ci"]][["beta"]])[-2])))
+    theta <- coefs[["theta"]] |> c(ci[["ci"]][["theta"]][-2]) |> t() |> structure(.Dimnames = list(paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""), c("Estimate", names(ci[["ci"]][["theta"]])[-2])))
+    p <- coefs[["p"]] |> c(ci[["ci"]][["p"]][-2]) |> t() |> structure(.Dimnames = list(paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""), c("Estimate", names(ci[["ci"]][["p"]])[-2])))
+
+    ##
+    res <- list(
+        formula = object[["formula"]],
+        link = object[["link"]],
+        residuals = r,
+        level = level,
+        coefficients = betas,
+        overdispersion = theta,
+        inflation = p,
+        parametric = object[["parametric"]],
+        nr_simulations = nr_simulations,
+        iterations = ifelse(!all(is.na(object[["trace"]][["Iteration"]])), max(object[["trace"]][["Iteration"]]), "NA")
+    )
+
+    class(res) <- "summary.itnb"
+    return(res)
 }
 
 #' @export
 print.summary.itnb <- function(x, ...) {
-    cat("HELP\n")
+    ##
+    cat("\n")
+
+    ##
+    cat("Formula:\n")
+    cat(deparse(x[["formula"]]), "\n")
+    cat("\n")
+
+    cat("Link:\n")
+    cat(x[["link"]], "\n")
+    cat("\n")
+
+    ##
+    cat("Coefficients:\n")
+    print(x[["coefficients"]])
+    cat("\n")
+
+    cat("Overdispersion:\n")
+    print(x[["overdispersion"]])
+    cat("\n")
+
+    cat("Inflation proportion:\n")
+    print(x[["inflation"]])
+    cat("\n")
+
+    ##
+    cat("(Based on", x[["nr_simulations"]], ifelse(x[["parametric"]], "parametric", "non-parametric"), "bootstrap simulations).\n")
+    cat("\n")
+
+    ##
+    cat("Number of EM iterations:", x[["iterations"]], "\n")
+    cat("\n")
 
     return(invisible(NULL))
-}
-
-#' @export
-residuals.itnb <- function(object, ...) {
-    return(0.0)
 }
 
 #' Extract model coefficients

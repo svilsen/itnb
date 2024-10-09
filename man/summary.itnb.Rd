@@ -9,14 +9,11 @@
 \arguments{
 \item{object}{\link{itnb-object}.}
 
-\item{...}{Additional arguments (see details).}
+\item{...}{Additional arguments are passed to the \link{itnb} and \link{confint.itnb}.}
 }
 \value{
 A function summary.
 }
 \description{
 Summary function for an \link{itnb-object} (an object of class \code{itnb}).
-}
-\details{
-...
 }

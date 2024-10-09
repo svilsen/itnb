@@ -7,7 +7,7 @@
 #'
 #' @importFrom Rcpp evalCpp
 #' @importFrom graphics 'par' 'plot' 'hist' 'abline' 'arrows'
-#' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile'
+#' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile' "coef" "delete.response" "fitted.values" "predict" "residuals"
 #'
 #' @useDynLib itnb
 #'
@@ -49,8 +49,8 @@ NULL
 #'     \item{\code{nr_simulations}}{The number of bootstrap samples used to create the simulated confidence envelopes.}
 #' }
 #'
-#' @name ci-object
+#' @name itnb.ci-object
 #'
-#' @rdname ci-object
+#' @rdname itnb.ci-object
 NULL
 

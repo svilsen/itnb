@@ -1,6 +1,6 @@
-#' Confidence envelopes of itnb-object.
+#' Confidence intervals of itnb-object.
 #'
-#' @description Simulated confidence envelopes of the parameters estimated by the \link{itnb} function.
+#' @description Bootstrap confidence intervals of the parameters estimated by the \link{itnb} function.
 #'
 #' @param object An \link{itnb-object}.
 #' @param level Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
@@ -9,25 +9,51 @@
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
 #' @param control List: A control object, see \link{itnb_control} for details, passed to the \link{itnb} function.
 #'
-#' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
-#'
-#' @export
-simulate_ci <- function(object, level = 0.95, nr_simulations = 200, parametric = FALSE, trace = 0, control = list()) {
-    UseMethod("simulate_ci")
-}
-
-#' @rdname simulate_ci
-#' @method simulate_ci itnb
-#'
 #' @example inst/examples/simulation_itnb_example.R
 #'
+#' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 #' @export
-simulate_ci.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric = FALSE, trace = 0, control = list()) {
+confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric = FALSE, trace = 0, control = list()) {
     ##
     if (all(is.na(object[["data"]]))) {
         stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
     }
 
+    ##
+    if (!is.null(level)) {
+        if (!is.numeric(level)) {
+            stop("'level' has to be 'NULL' or numeric.")
+        }
+        else if ((level < 0) || (level > 1)) {
+            stop("'level' has to be between 0 and 1.")
+        }
+    }
+
+    ##
+    if (!is.numeric(nr_simulations)) {
+        stop("'trace' has to be numeric.")
+    }
+    else if (nr_simulations < 1) {
+        stop("'nr_simulations' has to be > 0.")
+    }
+    nr_simulations <- ceiling(nr_simulations)
+
+    ##
+    if (!is.logical(parametric)) {
+        stop("'parametric' has to be logical.")
+    }
+
+    ##
+    if (!is.numeric(trace)) {
+        stop("'trace' has to be numeric.")
+    }
+    else if (trace < 0) {
+        stop("'trace' has to be >= 0.")
+    }
+    trace <- ceiling(trace)
+
+
+    ##
     X <- object[["data"]][["X"]]
     y <- object[["data"]][["y"]]
 
@@ -43,7 +69,7 @@ simulate_ci.itnb <- function(object, level = 0.95, nr_simulations = 200, paramet
 
     ##
     if (parametric) {
-        r <- residual(object)
+        r <- residuals(object, type = "response")
     }
 
     ##
@@ -68,7 +94,7 @@ simulate_ci.itnb <- function(object, level = 0.95, nr_simulations = 200, paramet
             y_j <- y[i_j, , drop = FALSE]
         }
 
-        pars_j <- itnb:::itnb_matrix(X = X_j, y = y_j, i = i, t = t, link = link, control = control)
+        pars_j <- itnb_matrix(X = X_j, y = y_j, i = i, t = t, link = link, control = control)
 
         beta_e[j, ] <- pars_j[["beta"]]
         theta_e[j] <- pars_j[["theta"]]
@@ -97,20 +123,20 @@ simulate_ci.itnb <- function(object, level = 0.95, nr_simulations = 200, paramet
         nr_simulations = nr_simulations
     )
 
-    class(res) <- "ci"
+    class(res) <- "itnb.ci"
     return(res)
 }
 
 #' Plot histograms of bootstrapped \link{itnb-object}
 #'
-#' @description A function plotting bootstrapped parameter estimates returned from the \link{simulate_ci} function.
+#' @description A function plotting bootstrapped parameter estimates returned from the \link{confint.itnb} function.
 #'
-#' @param x \link{ci-object}.
+#' @param x \link{itnb.ci-object}.
 #' @param which String: Indicating which parameter(s) to show. If left \code{NULL}, the function shows histograms of all parameters
 #' @param ... Additional arguments passed to the \link[graphics]{hist} function.
 #'
 #' @export
-hist.ci <- function(x, which = NULL, ...) {
+hist.itnb.ci <- function(x, which = NULL, ...) {
     #
     if (!is.na(x[["level"]])) {
         stop("'level' found in 'ci-object' implying the results have been aggregated; to use function re-run 'ci-object' setting 'level = NULL'.")
@@ -129,10 +155,10 @@ hist.ci <- function(x, which = NULL, ...) {
     #
     if (is.null(which)) {
         #
-        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = " ", cex.lab = 1.5, cex.main = 1.5, ...)
+        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
-        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = " ", cex.lab = 1.5, cex.main = 1.5, ...)
+        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
         #
@@ -158,10 +184,10 @@ hist.ci <- function(x, which = NULL, ...) {
         }
     }
     else if (all(which %in% c("theta", "overdispersion"))) {
-        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = " ", cex.lab = 1.5, cex.main = 1.5, ...)
+        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
     }
     else if (all(which %in% c("p", "pi", "inflation"))) {
-        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = " ", cex.lab = 1.5, cex.main = 1.5, ...)
+        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
     }
     else {
         stop("'which' has to be NULL, or specify the name of a parameter.")
@@ -172,14 +198,14 @@ hist.ci <- function(x, which = NULL, ...) {
 
 #' Quantiles of bootstrapped \link{itnb-object}
 #'
-#' @description A function plotting quantiles of parameter estimates returned from the \link{simulate_ci} function.
+#' @description A function plotting quantiles of parameter estimates returned from the \link{confint.itnb} function.
 #'
-#' @param x \link{ci-object}.
+#' @param x \link{itnb.ci-object}.
 #' @param which String: Indicating the column of the trace to be shown (i.e.\ the log-likelihood or the name of a parameter). If left \code{NULL}, the function shows all traces.
 #' @param ... Additional arguments passed to the \link[graphics]{hist} function.
 #'
 #' @export
-plot.ci <- function(x, which = NULL, ...) {
+plot.itnb.ci <- function(x, which = NULL, ...) {
     #
     dots <- list(...)
     if (is.na(x[["level"]]) & is.null(dots[["level"]])) {
@@ -216,7 +242,7 @@ plot.ci <- function(x, which = NULL, ...) {
         #
         plot(theta_e[2], 0,
              xlim = c(theta_e[1] - 0.05 * theta_e[1], theta_e[3] + 0.05 * theta_e[3]), ylim = c(-1, 1),
-             xlab = bquote(theta), ylab = "", main = " ",
+             xlab = bquote(theta), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
         arrows(x0 = theta_e[1], y0 = 0, x1 = theta_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
@@ -224,7 +250,7 @@ plot.ci <- function(x, which = NULL, ...) {
 
         plot(p_e[2], 0,
              xlim = c(p_e[1] - 0.05 * p_e[1], p_e[3] + 0.05 * p_e[3]), ylim = c(-1, 1),
-             xlab = bquote(pi), ylab = "", main = " ",
+             xlab = bquote(pi), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
         arrows(x0 = p_e[1], y0 = 0, x1 = p_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
@@ -275,7 +301,7 @@ plot.ci <- function(x, which = NULL, ...) {
     else if (all(which %in% c("theta", "overdispersion"))) {
         plot(theta_e[2], 0,
              xlim = c(theta_e[1] - 0.05 * theta_e[1], theta_e[3] + 0.05 * theta_e[3]), ylim = c(-1, 1),
-             xlab = bquote(theta), ylab = "", main = " ",
+             xlab = bquote(theta), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
         arrows(x0 = theta_e[1], y0 = 0, x1 = theta_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
@@ -283,7 +309,7 @@ plot.ci <- function(x, which = NULL, ...) {
     else if (all(which %in% c("p", "pi", "inflation"))) {
         plot(p_e[2], 0,
              xlim = c(p_e[1] - 0.05 * p_e[1], p_e[3] + 0.05 * p_e[3]), ylim = c(-1, 1),
-             xlab = bquote(pi), ylab = "", main = " ",
+             xlab = bquote(pi), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
         arrows(x0 = p_e[1], y0 = 0, x1 = p_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)

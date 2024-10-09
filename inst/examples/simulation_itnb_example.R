@@ -26,9 +26,9 @@ m <- itnb(
 )
 
 #
-simulate_ci(
+confint(
     object = m,
     level = 0.95,
-    nr_simulations = 200,
+    nr_simulations = 20,
     parametric = FALSE
 )
