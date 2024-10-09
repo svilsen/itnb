@@ -43,20 +43,20 @@ m <- itnb(
 plot(m, log = "x")
 
 ## Simulating CI's
-ci_p <- simulate_ci(
+ci_p <- confint(
     m, 
     level = 0.95, 
-    trace = TRUE, 
-    nr_simulations = 250, 
-    parametric = TRUE
-)
-
-ci_np <- simulate_ci(
-    m, 
-    level = 0.95, 
-    trace = TRUE, 
+    trace = 25, 
     nr_simulations = 250, 
     parametric = FALSE
+)
+
+ci_np <- confint(
+    m, 
+    level = 0.95, 
+    trace = 25, 
+    nr_simulations = 250, 
+    parametric = TRUE
 )
 ```
 
