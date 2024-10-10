@@ -517,9 +517,22 @@ summary.itnb <- function(object, ...) {
     coefs <- coef(object)
     ci <- confint.itnb(object, level = level, nr_simulations = nr_simulations, parametric = parametric, trace = trace, control = control)
 
-    betas <- coefs[["beta"]] |> rbind(ci[["ci"]][["beta"]][-2,]) |> t() |> structure(.Dimnames = list(c(names(coefs[["beta"]])), c("Estimate", rownames(ci[["ci"]][["beta"]])[-2])))
-    theta <- coefs[["theta"]] |> c(ci[["ci"]][["theta"]][-2]) |> t() |> structure(.Dimnames = list(paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""), c("Estimate", names(ci[["ci"]][["theta"]])[-2])))
-    p <- coefs[["p"]] |> c(ci[["ci"]][["p"]][-2]) |> t() |> structure(.Dimnames = list(paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""), c("Estimate", names(ci[["ci"]][["p"]])[-2])))
+    #
+    betas <- ci[["ci"]][["beta"]]
+    betas[,1] <- coefs[["beta"]]
+    colnames(betas)[grep("%", colnames(betas))] <- paste0(c("Lower (", "Upper ("), colnames(betas)[grep("%", colnames(betas))], c(")", ")"))
+
+    #
+    theta <- ci[["ci"]][["theta"]]
+    theta[,1] <- coefs[["theta"]]
+    colnames(theta)[grep("%", colnames(theta))] <- paste0(c("Lower (", "Upper ("), colnames(theta)[grep("%", colnames(theta))], c(")", ")"))
+    rownames(theta) <- paste(rep(" ", max(nchar(rownames(betas)))), collapse = "")
+
+    #
+    p <- ci[["ci"]][["p"]]
+    p[,1] <- coefs[["p"]]
+    colnames(p)[grep("%", colnames(p))] <- paste0(c("Lower (", "Upper ("), colnames(p)[grep("%", colnames(p))], c(")", ")"))
+    rownames(p) <- paste(rep(" ", max(nchar(rownames(betas)))), collapse = "")
 
     ##
     res <- list(

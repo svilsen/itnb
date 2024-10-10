@@ -114,10 +114,14 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
 
     if (!is.null(level)) {
         alpha <- (1 - level) / 2
+        betas <- ci_list[["beta"]] |> apply(2, function(z) c(mean(z), sd(z), quantile(z, probs = c(alpha, 1 - alpha)))) |> t()
+        theta <- c(mean(ci_list[["theta"]]), sd(ci_list[["theta"]]), quantile(ci_list[["theta"]], probs = c(alpha, 1 - alpha)))
+        p <- c(mean(ci_list[["p"]]), sd(ci_list[["p"]]), quantile(ci_list[["p"]], probs = c(alpha, 1 - alpha)))
+
         ci_list <- list(
-            "beta" = ci_list[["beta"]] |> apply(2, quantile, probs = c(alpha, 0.5, 1 - alpha)),
-            "theta" = ci_list[["theta"]] |> quantile(probs = c(alpha, 0.5, 1 - alpha)),
-            "p" = ci_list[["p"]] |> quantile(probs = c(alpha, 0.5, 1 - alpha))
+            "beta" = structure(betas, .Dimnames = list(rownames(betas), c("Estimate", "SE", colnames(betas)[-c(1, 2)]))),
+            "theta" = structure(theta |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "SE", names(theta)[-c(1, 2)]))),
+            "p" = structure(p |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "SE", names(p)[-c(1, 2)])))
         )
     }
 
