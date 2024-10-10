@@ -199,6 +199,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             trace = control[["trace"]]
         )
 
+        res[["iterations"]] <- NA
         res[["trace"]] <- NA
     }
     else if ((t < 0) | (i > t)) {
@@ -531,7 +532,7 @@ summary.itnb <- function(object, ...) {
         inflation = p,
         parametric = object[["parametric"]],
         nr_simulations = nr_simulations,
-        iterations = ifelse(!all(is.na(object[["trace"]][["Iteration"]])), max(object[["trace"]][["Iteration"]]), "NA")
+        iterations = object[["iterations"]]
     )
 
     class(res) <- "summary.itnb"

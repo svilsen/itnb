@@ -378,6 +378,7 @@ Rcpp::List em_itnb_cpp(
         Rcpp::Named("p") = p_j,
         Rcpp::Named("trace") = trace_list,
         Rcpp::Named("converged") = !not_converged,
+        Rcpp::Named("iterations") = j,
         Rcpp::Named("flag") = convergence_flag
     );
 }

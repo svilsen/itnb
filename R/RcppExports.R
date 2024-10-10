@@ -9,6 +9,10 @@ em_itnb_cpp <- function(X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_mi
     .Call('_itnb_em_itnb_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace)
 }
 
+mle_itnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace) {
+    .Call('_itnb_mle_itnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace)
+}
+
 ritnb_cpp <- function(n, mu, theta, p, i, t) {
     .Call('_itnb_ritnb_cpp', PACKAGE = 'itnb', n, mu, theta, p, i, t)
 }
@@ -19,9 +23,5 @@ ditnb_cpp <- function(x, mu, theta, p, i, t) {
 
 pitnb_cpp <- function(x, mu, theta, p, i, t) {
     .Call('_itnb_pitnb_cpp', PACKAGE = 'itnb', x, mu, theta, p, i, t)
-}
-
-mle_itnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace) {
-    .Call('_itnb_mle_itnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace)
 }
 

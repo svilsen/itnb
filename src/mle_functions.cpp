@@ -228,6 +228,7 @@ Rcpp::List mle_itnb_cpp(
         Rcpp::Named("p") = p_0,
         Rcpp::Named("trace") = 0,
         Rcpp::Named("converged") = !not_converged,
+        Rcpp::Named("iterations") = 0,
         Rcpp::Named("flag") = convergence_flag
     );
 }

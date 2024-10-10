@@ -17,6 +17,7 @@ An itnb-object is a list of class \code{itnb} containing the following:
     \item{\code{p}}{The optimised inflation proportion.}
     \item{\code{trace}}{If \code{save_trace = TRUE} in the control object, it contains a \link{data.frame} of the trace produced by the optimisation routine, otherwise it is \code{NA}.}
     \item{\code{converged}}{Boolean indicating whether the optimisation routine did or did not converge.}
+    \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
     \item{\code{flag}}{If the optimisation routine did not converge, a string indicating the potential point of failure is returned, otherwise it is \code{NA}.}
 }
 }

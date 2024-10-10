@@ -31,6 +31,7 @@ NULL
 #'     \item{\code{p}}{The optimised inflation proportion.}
 #'     \item{\code{trace}}{If \code{save_trace = TRUE} in the control object, it contains a \link{data.frame} of the trace produced by the optimisation routine, otherwise it is \code{NA}.}
 #'     \item{\code{converged}}{Boolean indicating whether the optimisation routine did or did not converge.}
+#'     \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
 #'     \item{\code{flag}}{If the optimisation routine did not converge, a string indicating the potential point of failure is returned, otherwise it is \code{NA}.}
 #' }
 #'
@@ -39,9 +40,30 @@ NULL
 #' @rdname itnb-object
 NULL
 
-#' @title A CI-object
+#' @title A summary.itnb-object
 #'
-#' @description A ci-object is a list of class \code{ci} containing the following:
+#' @description A summary.itnb-object is a list of class \code{summary.itnb} containing the following:
+#' \describe{
+#'     \item{\code{formula}}{The \link{formula} supplied to the model.}
+#'     \item{\code{link}}{The specified link function.}
+#'     \item{\code{residuals}}{The residuals of the fitted model.}
+#'     \item{\code{level}}{The specified confidence level.}
+#'     \item{\code{coefficients}}{The estimated coefficients and bootstrap confidence intervals.}
+#'     \item{\code{overdispersion}}{The estimated overdispersion and bootstrap confidence intervals.}
+#'     \item{\code{inflation}}{The estimated inflation proportion and bootstrap confidence intervals.}
+#'     \item{\code{parametric}}{Boolean indicating whether the bootstrap was parametric or non-parametric.}
+#'     \item{\code{nr_simulations}}{The number of bootstrap samples used to create the simulated confidence envelopes.}
+#'     \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
+#' }
+#'
+#' @name itnb.ci-object
+#'
+#' @rdname itnb.ci-object
+NULL
+
+#' @title An itnb.ci-object
+#'
+#' @description A itnb.ci-object is a list of class \code{itnb.ci} containing the following:
 #' \describe{
 #'     \item{\code{ci}}{A list of elements corresponding to the mean, overdispersion, and inflation proportion. If a confidence level is specified it contains the quantiles for each parameter, otherwise all estimated parameters are returned.}
 #'     \item{\code{parametric}}{Boolean indicating whether the bootstrap was parametric or non-parametric.}

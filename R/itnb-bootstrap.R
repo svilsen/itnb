@@ -67,9 +67,16 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
     theta <- object[["theta"]]
     p <- object[["p"]]
 
-    ##
     if (parametric) {
-        r <- residuals(object, type = "response")
+        link <- object[["link"]]
+        mu <- X %*% beta
+
+        if (link == "sqrt") {
+            mu <- eta * eta
+        }
+        else if (link == "log") {
+            mu <- exp(eta)
+        }
     }
 
     ##
@@ -82,10 +89,8 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
         }
 
         if (parametric) {
-            r_j <- sample(r, N, replace = TRUE)
-
             X_j <- X
-            y_j <- y + r_j
+            y_j <- matrix(ritnb(n = N, mu = mu, theta = theta, p = p, i = i, t = t), ncol = 1)
         }
         else {
             i_j <- sample(N, N, replace = TRUE)

@@ -36,7 +36,8 @@ m <- itnb(
     y ~ x, 
     data = data,
     i = i,
-    t = t
+    t = t,
+    link = "identity"
 )
 
 ## Plotting trace of EM-algorithm 
@@ -46,16 +47,14 @@ plot(m, log = "x")
 ci_p <- confint(
     m, 
     level = 0.95, 
-    trace = 25, 
-    nr_simulations = 250, 
+    nr_simulations = 25, 
     parametric = FALSE
 )
 
 ci_np <- confint(
     m, 
     level = 0.95, 
-    trace = 25, 
-    nr_simulations = 250, 
+    nr_simulations = 25, 
     parametric = TRUE
 )
 ```
