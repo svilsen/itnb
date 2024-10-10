@@ -543,7 +543,7 @@ summary.itnb <- function(object, ...) {
         coefficients = betas,
         overdispersion = theta,
         inflation = p,
-        parametric = object[["parametric"]],
+        parametric = parametric,
         nr_simulations = nr_simulations,
         iterations = object[["iterations"]]
     )
