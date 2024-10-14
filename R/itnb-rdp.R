@@ -34,7 +34,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta < 0.0)) {
+    else if (any(theta <= 0.0)) {
         stop("'theta' has to be larger than 0.")
     }
 
@@ -75,7 +75,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     t <- ceiling(t)
 
     ##
-    res <- ritnb_cpp(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+    res <- ritnb_cpp(n = n, mu = mu, theta = 1 / theta, p = p, i = i, t = t)
 
     ##
     return(res[, 1])
@@ -121,7 +121,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta < 0.0)) {
+    else if (any(theta <= 0.0)) {
         stop("'theta' has to be larger than 0.")
     }
 
@@ -162,7 +162,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     t <- ceiling(t)
 
     ##
-    log_res <- ditnb_cpp(x, mu, theta, p, i, t)
+    log_res <- ditnb_cpp(x, mu, 1 / theta, p, i, t)
 
     ##
     res <- log_res[, 1]
@@ -223,7 +223,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     else if (!((length(theta) == n) || length(theta) == 1)) {
         stop("'theta' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta < 0.0)) {
+    else if (any(theta <= 0.0)) {
         stop("'theta' has to be larger than 0.")
     }
 
@@ -264,7 +264,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     t <- ceiling(t)
 
     ##
-    log_res <- pitnb_cpp(q, mu, theta, p, i, t)
+    log_res <- pitnb_cpp(q, mu, 1 / theta, p, i, t)
 
     ##
     res <- log_res[, 1]

@@ -272,6 +272,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     #
     res <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
     res[["beta"]] <- structure(res[["beta"]] |> c(), .Names = colnames(X))
+    res[["theta"]] <- 1 / res[["theta"]]
 
     ##
     #
@@ -284,9 +285,13 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
 
     #
     if (control[["save_trace"]]) {
+        #
         res[["trace"]] <- do.call("cbind", res[["trace"]]) |> as.data.frame()
         names(res[["trace"]])[grep("V", names(res[["trace"]]))] <- colnames(X)
+
+        #
         res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
+        res[["trace"]][["theta"]] <- 1 / res[["trace"]][["theta"]]
     }
     else {
         res[["trace"]] <- NA
@@ -415,7 +420,7 @@ fitted.itnb <- function(object, ...) {
 #' @param object \link{itnb-object}.
 #' @param ... Additional arguments (see details).
 #'
-#' @details The additional argument used by the function is '\code{type}'; taking a string, either \code{"response"} or \code{"link"}, specifying the scale
+#' @details The additional argument used by the function is '\code{type}'; taking a string, either \code{"pearson"}, \code{"deviance"}, \code{"response"}, \code{"link"}, specifying the scale
 #' of the residuals.
 #'
 #' @export
@@ -424,13 +429,13 @@ residuals.itnb <- function(object, ...) {
 
     ##
     if (is.null(dots[["type"]])) {
-        type <- "response"
+        type <- "pearson"
     }
     else if (!is.character(dots[["type"]])) {
         stop("'type' has to be a string, taking the values 'link' or 'response'.")
     }
-    else if (!(dots[["type"]] %in% c("link", "response"))) {
-        stop("'type' has to be a string, taking the values 'link' or 'response'.")
+    else if (!(dots[["type"]] %in% c("pearson", "deviance", "link", "response"))) {
+        stop("'type' has to be a string, taking the values 'pearson', 'deviance', 'link', 'response'.")
     }
     else {
         type <- dots[["type"]]
@@ -456,9 +461,21 @@ residuals.itnb <- function(object, ...) {
         }
     }
 
-    ##
-    pred <- predict(object, newdata = X, type = type)
+    pred <- predict(object, newdata = X, type = ifelse(type == "link", "link", "response"))
     res <- y[,1] - pred
+
+    ##
+    if (type == "deviance") {
+        theta <- object[["theta"]]
+        p <- object[["p"]]
+
+    }
+    else if (type == "pearson") {
+        theta <- object[["theta"]]
+
+        s <- sqrt(pred * (1 + theta * pred))
+        res <- res / s
+    }
 
     return(res)
 }

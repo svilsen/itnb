@@ -90,7 +90,7 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
 
         if (parametric) {
             X_j <- X
-            y_j <- matrix(ritnb(n = N, mu = mu, theta = theta, p = p, i = i, t = t), ncol = 1)
+            y_j <- matrix(ritnb(n = N, mu = mu, theta = 1 / theta, p = p, i = i, t = t), ncol = 1)
         }
         else {
             i_j <- sample(N, N, replace = TRUE)
@@ -102,7 +102,7 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
         pars_j <- itnb_matrix(X = X_j, y = y_j, i = i, t = t, link = link, control = control)
 
         beta_e[j, ] <- pars_j[["beta"]]
-        theta_e[j] <- pars_j[["theta"]]
+        theta_e[j] <- 1 / pars_j[["theta"]]
         p_e[j] <- pars_j[["p"]]
     }
 
@@ -114,14 +114,35 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
 
     if (!is.null(level)) {
         alpha <- (1 - level) / 2
-        betas <- ci_list[["beta"]] |> apply(2, function(z) c(mean(z), sd(z), quantile(z, probs = c(alpha, 1 - alpha)))) |> t()
-        theta <- c(mean(ci_list[["theta"]]), sd(ci_list[["theta"]]), quantile(ci_list[["theta"]], probs = c(alpha, 1 - alpha)))
-        p <- c(mean(ci_list[["p"]]), sd(ci_list[["p"]]), quantile(ci_list[["p"]], probs = c(alpha, 1 - alpha)))
+
+        #
+        betas <- ci_list[["beta"]] |> apply(2, function(z) {
+                c(
+                    mean(z),
+                    sd(z),
+                    quantile(z, probs = c(alpha, 1 - alpha)),
+                    2 * min(mean(z <= 0), mean(z > 0))
+                )
+            }) |> t()
+
+        theta <- c(
+            mean(ci_list[["theta"]]),
+            sd(ci_list[["theta"]]),
+            quantile(ci_list[["theta"]], probs = c(alpha, 1 - alpha)),
+            NA
+        )
+
+        p <- c(
+            mean(ci_list[["p"]]),
+            sd(ci_list[["p"]]),
+            quantile(ci_list[["p"]], probs = c(alpha, 1 - alpha)),
+            NA
+        )
 
         ci_list <- list(
-            "beta" = structure(betas, .Dimnames = list(rownames(betas), c("Estimate", "SE", colnames(betas)[-c(1, 2)]))),
-            "theta" = structure(theta |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "SE", names(theta)[-c(1, 2)]))),
-            "p" = structure(p |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "SE", names(p)[-c(1, 2)])))
+            "beta" = structure(betas, .Dimnames = list(rownames(betas), c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value"))),
+            "theta" = structure(theta |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value"))),
+            "p" = structure(p |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value")))
         )
     }
 
