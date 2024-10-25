@@ -56,7 +56,7 @@ public:
     // Functor / objective function
     double operator()(const arma::vec & par) override {
         const arma::vec & beta = par.head(M);
-        const double & theta = par[M];
+        const double & theta = std::exp(par[M]);
 
         //
         double d = 0.0;
@@ -86,7 +86,7 @@ public:
         gr = arma::zeros(M + 1);
         if (exact) {
             const arma::vec & beta = par.head(M);
-            const double & theta = par[M];
+            const double & theta = std::exp(par[M]);
 
             for (int n = 0; n < N; n++) {
                 //
@@ -134,7 +134,7 @@ public:
                 }
 
                 //
-                gr[M] += gr_theta;
+                gr[M] += gr_theta * theta;
             }
         }
         else{
@@ -170,7 +170,8 @@ private:
 void optimise_itnb(
         arma::vec & beta_j, double & theta_j, double & p_j, double & loglike_j,
         int & j, bool & not_converged, std::string & convergence_flag,
-        arma::mat & beta_trace, arma::vec & theta_trace, arma::vec & p_trace, arma::vec & loglike_trace,
+        arma::mat & beta_trace, arma::vec & alpha_trace, arma::vec & p_trace,
+        arma::vec & loglike_trace, arma::mat & approx_hessian,
         const arma::mat & X, const arma::vec & y, const arma::vec yi,
         const int & i, const int & t, const std::string & link,
         const int & N, const int & M,
@@ -195,7 +196,7 @@ void optimise_itnb(
     arma::vec pars_j_old = pars_j;
 
     pars_j.head(M) = beta_j;
-    pars_j[M] = theta_j;
+    pars_j[M] = std::log(theta_j);
 
     //
     Roptim<EM> opt("L-BFGS-B");
@@ -206,16 +207,9 @@ void optimise_itnb(
     double loglike_j_old = HUGE_VAL;
     double delta_loglike_j = loglike_j - loglike_j_old;
 
-
-    //
-    arma::vec lb = (-HUGE_VAL) * arma::ones(M + 1);
-    lb[M] = 1e-8;
-
-    opt.set_lower(lb);
-
     if (trace > 0) {
         Rcpp::Rcout << "Iteration: " << j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << delta_loglike_j << "\n"
-                    << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t theta = " << theta_j << "\t p = " << p_j << "\n";
+                    << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 1.0 / theta_j << "\t p = " << p_j << "\n";
     }
 
     //
@@ -227,7 +221,7 @@ void optimise_itnb(
 
         //
         pars_j_old.head(M) = beta_j;
-        pars_j_old[M] = theta_j;
+        pars_j_old[M] = std::log(theta_j);
 
         //// E-step
         update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO);
@@ -244,7 +238,7 @@ void optimise_itnb(
         pars_j = opt.par();
 
         beta_j = pars_j.head(M);
-        theta_j = pars_j[M];
+        theta_j = std::exp(pars_j[M]);
 
         //// Convergence
         loglike_j_old = loglike_j;
@@ -257,7 +251,7 @@ void optimise_itnb(
 
             p_j = p_j_old;
             beta_j = pars_j_old.head(M);
-            theta_j = pars_j_old[M];
+            theta_j = std::exp(pars_j_old[M]);
 
             loglike_j = loglike_j_old;
         }
@@ -278,13 +272,13 @@ void optimise_itnb(
         if (trace > 0) {
             if (((j % trace) == 0) | (!not_converged)) {
                 Rcpp::Rcout << "Iteration: " <<  j << "\t Current log-likelihood: " << loglike_j << "\t Absolute change in log-likelihood: " << delta_loglike_j << "\n"
-                            << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t theta = " << theta_j << "\t p = " << p_j << "\n";
+                            << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 1.0 / theta_j << "\t p = " << p_j << "\n";
             }
         }
 
         if (save_trace) {
             beta_trace.row(j) = beta_j.t();
-            theta_trace[j] = theta_j;
+            alpha_trace[j] = 1.0 / theta_j;
             p_trace[j] = p_j;
             loglike_trace[j] = loglike_j;
         }
@@ -292,6 +286,8 @@ void optimise_itnb(
         ////
         j++;
     }
+
+    r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 
 // [[Rcpp::export]]
@@ -328,13 +324,13 @@ Rcpp::List em_itnb_cpp(
 
     //
     arma::mat beta_trace;
-    arma::vec theta_trace, p_trace, loglike_trace;
+    arma::vec alpha_trace, p_trace, loglike_trace;
     if (save_trace) {
         beta_trace.set_size(iteration_max + 1, M);
         beta_trace.row(0) = beta_0.t();
 
-        theta_trace.set_size(iteration_max + 1);
-        theta_trace[0] = theta_0;
+        alpha_trace.set_size(iteration_max + 1);
+        alpha_trace[0] = 1.0 / theta_0;
 
         p_trace.set_size(iteration_max + 1);
         p_trace[0] = p_0;
@@ -344,10 +340,14 @@ Rcpp::List em_itnb_cpp(
     }
 
     //
+    arma::mat approx_hessian = arma::mat(beta_j.size() + 1, beta_j.size() + 1);
+
+    //
     optimise_itnb(
         beta_j, theta_j, p_j, loglike_j,
         j, not_converged, convergence_flag,
-        beta_trace, theta_trace, p_trace, loglike_trace,
+        beta_trace, alpha_trace, p_trace,
+        loglike_trace, approx_hessian,
         X, y, yi, i, t, link, N, M,
         iteration_min, iteration_max,
         tolerance, lambda,
@@ -361,11 +361,19 @@ Rcpp::List em_itnb_cpp(
         trace_list = Rcpp::List::create(
             Rcpp::Named("LogLikelihood") = loglike_trace.head(j),
             Rcpp::Named("beta") = beta_trace.rows(0, j - 1),
-            Rcpp::Named("theta") = theta_trace.head(j),
+            Rcpp::Named("alpha") = alpha_trace.head(j),
             Rcpp::Named("p") = p_trace.head(j)
         );
     }
 
+    //
+    arma::mat vcov = arma::inv(approx_hessian);
+    double se_logtheta = std::sqrt(vcov(beta_j.size(), beta_j.size()));
+
+    vcov.shed_col(beta_j.size());
+    vcov.shed_row(beta_j.size());
+
+    //
     return Rcpp::List::create(
         Rcpp::Named("formula") = 0,
         Rcpp::Named("data") = 0,
@@ -374,8 +382,10 @@ Rcpp::List em_itnb_cpp(
         Rcpp::Named("link") = link,
         Rcpp::Named("loglikelihood") = loglike_j,
         Rcpp::Named("beta") = beta_j,
-        Rcpp::Named("theta") = theta_j,
+        Rcpp::Named("alpha") = 1.0 / theta_j,
         Rcpp::Named("p") = p_j,
+        Rcpp::Named("vcov") = vcov,
+        Rcpp::Named("logtheta") = se_logtheta,
         Rcpp::Named("trace") = trace_list,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = j,

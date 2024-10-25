@@ -22,7 +22,7 @@ public:
     // Functor / objective function
     double operator()(const arma::vec & par) override {
         const arma::vec & beta = par.head(M);
-        const double & theta = par[M];
+        const double & theta = std::exp(par[M]);
 
         //
         double d = 0.0;
@@ -55,7 +55,7 @@ public:
         gr = arma::zeros(M + 1);
         if (exact) {
             const arma::vec & beta = par.head(M);
-            const double & theta = par[M];
+            const double & theta = std::exp(par[M]);
 
             for (int n = 0; n < N; n++) {
                 //
@@ -102,7 +102,7 @@ public:
                 }
 
                 //
-                gr[M] += (-gr_theta);
+                gr[M] += (-gr_theta) * theta;
             }
         }
         else{
@@ -136,7 +136,7 @@ private:
 //// Optimiser
 void optimise_tnb(
         arma::vec & beta_j, double & theta_j, const double & p_0, double & loglike_j,
-        int & j, bool & not_converged, std::string & convergence_flag,
+        int & j, bool & not_converged, std::string & convergence_flag, arma::mat & approx_hessian,
         const arma::mat & X, const arma::vec & y,
         const int & i, const int & t, const std::string & link,
         const int & N, const int & M,
@@ -154,17 +154,11 @@ void optimise_tnb(
     //
     arma::vec pars_j = arma::vec(M + 1);
     pars_j.head(M) = beta_j;
-    pars_j[M] = theta_j;
+    pars_j[M] = std::log(theta_j);
 
     //
     Roptim<MLE> opt("L-BFGS-B");
     MLE r_log_likelihood(X, y, i, t, steps, exact, lambda[0], LO);
-
-    //
-    arma::vec lb = (-HUGE_VAL) * arma::ones(M + 1);
-    lb[M] = 1e-8;
-
-    opt.set_lower(lb);
     opt.control.trace = trace;
 
     //
@@ -173,10 +167,11 @@ void optimise_tnb(
 
     //
     beta_j = pars_j.head(M);
-    theta_j = pars_j[M];
+    theta_j = std::exp(pars_j[M]);
 
     //
     loglike_j = loglikelihood(X, y, beta_j, theta_j, p_0, i, t, N, LO);
+    r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 
 
@@ -207,13 +202,24 @@ Rcpp::List mle_itnb_cpp(
     double loglike_j = 0.0;
 
     //
+    arma::mat approx_hessian = arma::mat(beta_j.size() + 1, beta_j.size() + 1);
+
+    //
     optimise_tnb(
         beta_j, theta_j, p_0, loglike_j,
         j, not_converged, convergence_flag,
+        approx_hessian,
         X, y, i, t, link, N, M,
         tolerance, lambda,
         steps, exact, trace
     );
+
+    //
+    arma::mat vcov = arma::inv(approx_hessian);
+    double se_logtheta = std::sqrt(vcov(beta_j.size(), beta_j.size()));
+
+    vcov.shed_col(beta_j.size());
+    vcov.shed_row(beta_j.size());
 
     //
     return Rcpp::List::create(
@@ -224,8 +230,10 @@ Rcpp::List mle_itnb_cpp(
         Rcpp::Named("link") = link,
         Rcpp::Named("loglikelihood") = loglike_j,
         Rcpp::Named("beta") = beta_j,
-        Rcpp::Named("theta") = theta_j,
+        Rcpp::Named("alpha") = 1.0 / theta_j,
         Rcpp::Named("p") = p_0,
+        Rcpp::Named("vcov") = vcov,
+        Rcpp::Named("logtheta") = se_logtheta,
         Rcpp::Named("trace") = 0,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = 0,

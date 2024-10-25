@@ -2,7 +2,18 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 //// ritnb function
-// Generate random variates from a truncated negative binomial distribution
+// Generate random variates from a truncated poisson and negative binomial distribution
+int rtpoisson_cpp(const double & mu, const int & t) {
+    //
+    int x = t;
+    while (x <= t){
+        x = R::rpois(mu);
+    }
+
+    //
+    return x;
+}
+
 int rtnbinom_cpp(const double & mu, const double & theta, const int & t) {
     //
     int x = t;
@@ -65,10 +76,20 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
         }
         else {
             if (t_n > -1) {
-                val = rtnbinom_cpp(mu_n, theta_n, t_n);
+                if (std::isinf(theta_n)) {
+                    val = rtpoisson_cpp(mu_n, t_n);
+                }
+                else {
+                    val = rtnbinom_cpp(mu_n, theta_n, t_n);
+                }
             }
             else {
-                val = R::rnbinom(theta_n, theta_n / (mu_n + theta_n));
+                if (std::isinf(theta_n)) {
+                    val = R::rpois(mu_n);
+                }
+                else {
+                    val = R::rnbinom(theta_n, theta_n / (mu_n + theta_n));
+                }
             }
         }
 
@@ -83,7 +104,13 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
 double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
     //
     const double tm = theta + mu;
-    double log_d = theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - std::lgamma(x + 1) + x * std::log(mu) - x * std::log(theta + mu);
+    double log_d = x * std::log(mu) - std::lgamma(x + 1);
+    if (std::isinf(theta)) {
+        log_d += (-mu);
+    }
+    else{
+        log_d += theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
+    }
 
     //
     if (t > -1) {
@@ -92,14 +119,21 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
         }
         else {
             //
-            const double pb = R::pbeta(mu / tm, t + 1, theta, true, true);
+            double pb = 0.0;
+            if (std::isinf(theta)) {
+                pb = R::ppois(t, mu, false, true);
+            }
+            else {
+                pb = R::pbeta(mu / tm, t + 1, theta, true, true);
+            }
+
             log_d = log_d - pb;
         }
     }
 
     //
     if (i > -1) {
-        if (p > 1e-16) {
+        if (p > 2e-16) {
             log_d = std::log(1.0 - p) + log_d;
 
             if (x == i) {

@@ -4,7 +4,7 @@
 #'
 #' @param object An \link{itnb-object}.
 #' @param level Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
-#' @param nr_simulations Numeric: The number of simulations used to create the confidence envelopes.
+#' @param B Numeric: The number of simulations used to create the confidence envelopes.
 #' @param parametric TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
 #' @param control List: A control object, see \link{itnb_control} for details, passed to the \link{itnb} function.
@@ -13,7 +13,7 @@
 #'
 #' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 #' @export
-confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric = FALSE, trace = 0, control = list()) {
+confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trace = 0, control = list()) {
     ##
     if (all(is.na(object[["data"]]))) {
         stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
@@ -30,13 +30,13 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
     }
 
     ##
-    if (!is.numeric(nr_simulations)) {
-        stop("'trace' has to be numeric.")
+    if (!is.numeric(B)) {
+        stop("'B' has to be numeric.")
     }
-    else if (nr_simulations < 1) {
-        stop("'nr_simulations' has to be > 0.")
+    else if (B < 1) {
+        stop("'B' has to be > 0.")
     }
-    nr_simulations <- ceiling(nr_simulations)
+    B <- ceiling(B)
 
     ##
     if (!is.logical(parametric)) {
@@ -52,7 +52,6 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
     }
     trace <- ceiling(trace)
 
-
     ##
     X <- object[["data"]][["X"]]
     y <- object[["data"]][["y"]]
@@ -64,85 +63,58 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
 
     ##
     beta <- object[["beta"]]
-    theta <- object[["theta"]]
+    alpha <- object[["alpha"]]
     p <- object[["p"]]
 
     if (parametric) {
-        link <- object[["link"]]
         mu <- X %*% beta
 
         if (link == "sqrt") {
-            mu <- eta * eta
+            mu <- mu * mu
         }
         else if (link == "log") {
-            mu <- exp(eta)
+            mu <- exp(mu)
         }
     }
 
     ##
-    beta_e <- matrix(NA, nrow = nr_simulations, ncol = length(beta))
-    theta_e <- rep(NA, nr_simulations)
-    p_e <- rep(NA, nr_simulations)
-    for (j in seq_len(nr_simulations)) {
-        if ((trace > 0) && ((j == 1) || ((j %% trace) == 0) || (j == nr_simulations))) {
-            cat("Iteration:", j, "/", nr_simulations, "\n")
+    beta_e <- matrix(NA, nrow = B, ncol = length(beta))
+    alpha_e <- rep(NA, B)
+    p_e <- rep(NA, B)
+    for (b in seq_len(B)) {
+        if ((trace > 0) && ((b == 1) || ((b %% trace) == 0) || (b == B))) {
+            cat("Iteration:", b, "/", B, "\n")
         }
 
         if (parametric) {
-            X_j <- X
-            y_j <- matrix(ritnb(n = N, mu = mu, theta = 1 / theta, p = p, i = i, t = t), ncol = 1)
+            X_b <- X
+            y_b <- matrix(ritnb(n = N, mu = mu, alpha = alpha, p = p, i = i, t = t), ncol = 1)
+        } else {
+            i_b <- sample(N, N, replace = TRUE)
+
+            X_b <- X[i_b, , drop = FALSE]
+            y_b <- y[i_b, , drop = FALSE]
         }
-        else {
-            i_j <- sample(N, N, replace = TRUE)
 
-            X_j <- X[i_j, , drop = FALSE]
-            y_j <- y[i_j, , drop = FALSE]
-        }
+        pars_b <- itnb_matrix(X = X_b, y = y_b, i = i, t = t, link = link, control = control)
 
-        pars_j <- itnb_matrix(X = X_j, y = y_j, i = i, t = t, link = link, control = control)
-
-        beta_e[j, ] <- pars_j[["beta"]]
-        theta_e[j] <- 1 / pars_j[["theta"]]
-        p_e[j] <- pars_j[["p"]]
+        beta_e[b, ] <- pars_b[["beta"]]
+        alpha_e[b] <- pars_b[["alpha"]]
+        p_e[b] <- pars_b[["p"]]
     }
 
     ci_list <- list(
         "beta" = structure(beta_e, .Dimnames = list(NULL, names(beta))),
-        "theta" = theta_e,
+        "alpha" = alpha_e,
         "p" = p_e
     )
 
     if (!is.null(level)) {
-        alpha <- (1 - level) / 2
-
-        #
-        betas <- ci_list[["beta"]] |> apply(2, function(z) {
-                c(
-                    mean(z),
-                    sd(z),
-                    quantile(z, probs = c(alpha, 1 - alpha)),
-                    2 * min(mean(z <= 0), mean(z > 0))
-                )
-            }) |> t()
-
-        theta <- c(
-            mean(ci_list[["theta"]]),
-            sd(ci_list[["theta"]]),
-            quantile(ci_list[["theta"]], probs = c(alpha, 1 - alpha)),
-            NA
-        )
-
-        p <- c(
-            mean(ci_list[["p"]]),
-            sd(ci_list[["p"]]),
-            quantile(ci_list[["p"]], probs = c(alpha, 1 - alpha)),
-            NA
-        )
-
+        sig_level <- (1 - level) / 2
         ci_list <- list(
-            "beta" = structure(betas, .Dimnames = list(rownames(betas), c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value"))),
-            "theta" = structure(theta |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value"))),
-            "p" = structure(p |> matrix(nrow = 1), .Dimnames = list("", c("Estimate", "S.E.", paste0(100 * c(alpha, 1 - alpha), "%"), "P-value")))
+            "beta" = ci_list[["beta"]] |> apply(2, quantile, probs = c(sig_level, 1 - sig_level)) |> t(),
+            "alpha" = quantile(ci_list[["alpha"]], probs = c(sig_level, 1 - sig_level)),
+            "p" = quantile(ci_list[["p"]], probs = c(sig_level, 1 - sig_level))
         )
     }
 
@@ -150,7 +122,7 @@ confint.itnb <- function(object, level = 0.95, nr_simulations = 200, parametric 
         ci = ci_list,
         parametric = parametric,
         level = ifelse(is.null(level), NA, level),
-        nr_simulations = nr_simulations
+        B = B
     )
 
     class(res) <- "itnb.ci"
@@ -177,7 +149,7 @@ hist.itnb.ci <- function(x, which = NULL, ...) {
     betas <- colnames(beta_e)
 
     #
-    theta_e <- x[["ci"]][["theta"]]
+    alpha_e <- x[["ci"]][["alpha"]]
 
     #
     p_e <- x[["ci"]][["p"]]
@@ -185,7 +157,7 @@ hist.itnb.ci <- function(x, which = NULL, ...) {
     #
     if (is.null(which)) {
         #
-        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
+        hist(alpha_e, breaks = "fd", xlab = bquote(alpha), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
         hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
@@ -213,8 +185,8 @@ hist.itnb.ci <- function(x, which = NULL, ...) {
             }
         }
     }
-    else if (all(which %in% c("theta", "overdispersion"))) {
-        hist(theta_e, breaks = "fd", xlab = bquote(theta), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
+    else if (all(which %in% c("alpha", "overdispersion"))) {
+        hist(alpha_e, breaks = "fd", xlab = bquote(alpha), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
     }
     else if (all(which %in% c("p", "pi", "inflation"))) {
         hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
@@ -244,24 +216,24 @@ plot.itnb.ci <- function(x, which = NULL, ...) {
     else if (is.na(x[["level"]])) {
         #
         level <- dots[["level"]]
-        alpha <- (1 - level) / 2
+        sig_level <- (1 - level) / 2
 
         #
-        beta_e <- x[["ci"]][["beta"]] |> apply(2, quantile, probs = c(alpha, 0.5, 1 - alpha))
+        beta_e <- x[["ci"]][["beta"]] |> apply(2, quantile, probs = c(sig_level, 0.5, 1 - sig_level))
         betas <- colnames(beta_e)
 
         #
-        theta_e <- x[["ci"]][["theta"]] |> quantile(probs = c(alpha, 0.5, 1 - alpha))
+        alpha_e <- x[["ci"]][["alpha"]] |> quantile(probs = c(sig_level, 0.5, 1 - sig_level))
 
         #
-        p_e <- x[["ci"]][["p"]] |> quantile(probs = c(alpha, 0.5, 1 - alpha))
+        p_e <- x[["ci"]][["p"]] |> quantile(probs = c(sig_level, 0.5, 1 - sig_level))
     }
     else {
         beta_e <- x[["ci"]][["beta"]]
         betas <- colnames(beta_e)
 
         #
-        theta_e <- x[["ci"]][["theta"]]
+        alpha_e <- x[["ci"]][["alpha"]]
 
         #
         p_e <- x[["ci"]][["p"]]
@@ -270,12 +242,12 @@ plot.itnb.ci <- function(x, which = NULL, ...) {
     #
     if (is.null(which)) {
         #
-        plot(theta_e[2], 0,
-             xlim = c(theta_e[1] - 0.05 * theta_e[1], theta_e[3] + 0.05 * theta_e[3]), ylim = c(-1, 1),
-             xlab = bquote(theta), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
+        plot(alpha_e[2], 0,
+             xlim = c(alpha_e[1] - 0.05 * alpha_e[1], alpha_e[3] + 0.05 * alpha_e[3]), ylim = c(-1, 1),
+             xlab = bquote(alpha), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = theta_e[1], y0 = 0, x1 = theta_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
+        arrows(x0 = alpha_e[1], y0 = 0, x1 = alpha_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
         plot(p_e[2], 0,
@@ -328,13 +300,13 @@ plot.itnb.ci <- function(x, which = NULL, ...) {
             invisible(readline(prompt="Press [ENTER] to continue"))
         }
     }
-    else if (all(which %in% c("theta", "overdispersion"))) {
-        plot(theta_e[2], 0,
-             xlim = c(theta_e[1] - 0.05 * theta_e[1], theta_e[3] + 0.05 * theta_e[3]), ylim = c(-1, 1),
-             xlab = bquote(theta), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
+    else if (all(which %in% c("alpha", "overdispersion"))) {
+        plot(alpha_e[2], 0,
+             xlim = c(alpha_e[1] - 0.05 * alpha_e[1], alpha_e[3] + 0.05 * alpha_e[3]), ylim = c(-1, 1),
+             xlab = bquote(alpha), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
              pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
              yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = theta_e[1], y0 = 0, x1 = theta_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
+        arrows(x0 = alpha_e[1], y0 = 0, x1 = alpha_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
     }
     else if (all(which %in% c("p", "pi", "inflation"))) {
         plot(p_e[2], 0,

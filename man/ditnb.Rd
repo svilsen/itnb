@@ -7,7 +7,7 @@
 ditnb(
   x,
   mu,
-  theta,
+  alpha,
   p = NULL,
   i = NULL,
   t = NULL,
@@ -16,17 +16,17 @@ ditnb(
 )
 }
 \arguments{
-\item{x}{Numeric: A vector of quantiles.}
+\item{x}{Numeric (>= 0): A vector of quantiles.}
 
-\item{mu}{Numeric: The expected value.}
+\item{mu}{Numeric (> 0): The expected value.}
 
-\item{theta}{Numeric: The overdispersion.}
+\item{alpha}{Numeric (>= 0): The overdispersion.}
 
-\item{p}{Numeric: The inflation proportion.}
+\item{p}{Numeric (>= 0): The inflation proportion.}
 
-\item{i}{Numeric: The inflation point.}
+\item{i}{Numeric (>= 0): The inflation point.}
 
-\item{t}{Numeric: The truncation point.}
+\item{t}{Numeric (>= 0): The truncation point.}
 
 \item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?}
 
@@ -36,5 +36,5 @@ ditnb(
 A vector the size as \code{x} containing the probability of each value.
 }
 \description{
-The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
+The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 }

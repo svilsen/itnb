@@ -7,7 +7,7 @@
 pitnb(
   q,
   mu,
-  theta,
+  alpha,
   p = NULL,
   i = NULL,
   t = NULL,
@@ -16,17 +16,17 @@ pitnb(
 )
 }
 \arguments{
-\item{q}{Numeric: A vector of quantiles.}
+\item{q}{Numeric (>= 0): A vector of quantiles.}
 
-\item{mu}{Numeric: The expected value.}
+\item{mu}{Numeric (> 0): The expected value.}
 
-\item{theta}{Numeric: The overdispersion.}
+\item{alpha}{Numeric (>= 0): The overdispersion.}
 
-\item{p}{Numeric: The inflation proportion.}
+\item{p}{Numeric (>= 0): The inflation proportion.}
 
-\item{i}{Numeric: The inflation point.}
+\item{i}{Numeric (>= 0): The inflation point.}
 
-\item{t}{Numeric: The truncation point.}
+\item{t}{Numeric (>= 0): The truncation point.}
 
 \item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?}
 
@@ -36,5 +36,5 @@ pitnb(
 A vector the size as \code{q} containing the cumulative probability of each value.
 }
 \description{
-The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
+The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 }

@@ -7,7 +7,7 @@
 #'
 #' @importFrom Rcpp evalCpp
 #' @importFrom graphics 'par' 'plot' 'hist' 'abline' 'arrows'
-#' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile' "coef" "delete.response" "fitted.values" "predict" "residuals"
+#' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile' 'coef' 'delete.response' 'fitted.values' 'predict' 'residuals' 'printCoefmat' 'sd' 'pnorm'
 #'
 #' @useDynLib itnb
 #'
@@ -27,8 +27,10 @@ NULL
 #'     \item{\code{link}}{The specified link function.}
 #'     \item{\code{loglikelihood}}{The loglikelihood of the optimised parameters.}
 #'     \item{\code{beta}}{The optimised regression coefficients.}
-#'     \item{\code{theta}}{The optimised overdispersion.}
+#'     \item{\code{alpha}}{The optimised overdispersion (correpsonds to 1 / theta in the standard parameterisation).}
 #'     \item{\code{p}}{The optimised inflation proportion.}
+#'     \item{\code{vcov}}{The variance-covariance matrix of the model parameters.}
+#'     \item{\code{logtheta}}{The standard error of the logarithm of theta (1 / alpha).}
 #'     \item{\code{trace}}{If \code{save_trace = TRUE} in the control object, it contains a \link{data.frame} of the trace produced by the optimisation routine, otherwise it is \code{NA}.}
 #'     \item{\code{converged}}{Boolean indicating whether the optimisation routine did or did not converge.}
 #'     \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}

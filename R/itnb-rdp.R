@@ -1,17 +1,17 @@
 #' ritnb
 #'
-#' @description Generates \code{n} random numbers from a i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
+#' @description Generates \code{n} random numbers from a i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'
-#' @param n Numeric: The number of observations.
-#' @param mu Numeric: The expected value.
-#' @param theta Numeric: The overdispersion.
-#' @param p Numeric: The inflation proportion.
-#' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point.
+#' @param n Numeric (> 0): The number of observations.
+#' @param mu Numeric (> 0): The expected value.
+#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param p Numeric (>= 0): The inflation proportion.
+#' @param i Numeric (>= 0): The inflation point.
+#' @param t Numeric (>= 0): The truncation point.
 #'
 #' @return A vector of size \code{n} containing realisations of a itnb distribution.
 #' @export
-ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
+ritnb <- function(n, mu, alpha, p = NULL, i = NULL, t = NULL) {
     ##
     if (!is.numeric(n)) {
         stop("'n' has to be numeric.")
@@ -28,14 +28,14 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
         stop("'mu' has to be larger than 0.")
     }
 
-    if (!is.numeric(theta)) {
-        stop("'theta' has to be numeric.")
+    if (!is.numeric(alpha)) {
+        stop("'alpha' has to be numeric.")
     }
-    else if (!((length(theta) == n) || length(theta) == 1)) {
-        stop("'theta' needs to have length 1, or be the same length as 'x'.")
+    else if (!((length(alpha) == n) || length(alpha) == 1)) {
+        stop("'alpha' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta <= 0.0)) {
-        stop("'theta' has to be larger than 0.")
+    else if (any(alpha < 0.0)) {
+        stop("'alpha' has to be larger than or equal to 0.")
     }
 
     if (!is.numeric(p)) {
@@ -75,7 +75,7 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
     t <- ceiling(t)
 
     ##
-    res <- ritnb_cpp(n = n, mu = mu, theta = 1 / theta, p = p, i = i, t = t)
+    res <- ritnb_cpp(n = n, mu = mu, theta = 1 / alpha, p = p, i = i, t = t)
 
     ##
     return(res[, 1])
@@ -83,20 +83,20 @@ ritnb <- function(n, mu, theta, p = NULL, i = NULL, t = NULL) {
 
 #' ditnb
 #'
-#' @description The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
+#' @description The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'
-#' @param x Numeric: A vector of quantiles.
-#' @param mu Numeric: The expected value.
-#' @param theta Numeric: The overdispersion.
-#' @param p Numeric: The inflation proportion.
-#' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point.
+#' @param x Numeric (>= 0): A vector of quantiles.
+#' @param mu Numeric (> 0): The expected value.
+#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param p Numeric (>= 0): The inflation proportion.
+#' @param i Numeric (>= 0): The inflation point.
+#' @param t Numeric (>= 0): The truncation point.
 #' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?
 #' @param return_log TRUE/FALSE: should the logarithm of the probabilities be returned?
 #'
 #' @return A vector the size as \code{x} containing the probability of each value.
 #' @export
-ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
+ditnb <- function(x, mu, alpha, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
     n <- length(x)
 
     ##
@@ -115,14 +115,14 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
         stop("'mu' has to be larger than 0.")
     }
 
-    if (!is.numeric(theta)) {
-        stop("'theta' has to be numeric.")
+    if (!is.numeric(alpha)) {
+        stop("'alpha' has to be numeric.")
     }
-    else if (!((length(theta) == n) || length(theta) == 1)) {
-        stop("'theta' needs to have length 1, or be the same length as 'x'.")
+    else if (!((length(alpha) == n) || length(alpha) == 1)) {
+        stop("'alpha' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta <= 0.0)) {
-        stop("'theta' has to be larger than 0.")
+    else if (any(alpha < 0.0)) {
+        stop("'alpha' has to be larger than or equal to 0.")
     }
 
     if (!is.numeric(p)) {
@@ -162,7 +162,7 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     t <- ceiling(t)
 
     ##
-    log_res <- ditnb_cpp(x, mu, 1 / theta, p, i, t)
+    log_res <- ditnb_cpp(x = x, mu = mu, theta = 1 / alpha, p = p, i = i, t = t)
 
     ##
     res <- log_res[, 1]
@@ -185,20 +185,20 @@ ditnb <- function(x, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
 
 #' pitnb
 #'
-#' @description The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{theta}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
+#' @description The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'
-#' @param q Numeric: A vector of quantiles.
-#' @param mu Numeric: The expected value.
-#' @param theta Numeric: The overdispersion.
-#' @param p Numeric: The inflation proportion.
-#' @param i Numeric: The inflation point.
-#' @param t Numeric: The truncation point.
+#' @param q Numeric (>= 0): A vector of quantiles.
+#' @param mu Numeric (> 0): The expected value.
+#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param p Numeric (>= 0): The inflation proportion.
+#' @param i Numeric (>= 0): The inflation point.
+#' @param t Numeric (>= 0): The truncation point.
 #' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?
 #' @param return_log TRUE/FALSE: should log of the cmf be returned?
 #'
 #' @return A vector the size as \code{q} containing the cumulative probability of each value.
 #' @export
-pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
+pitnb <- function(q, mu, alpha, p = NULL, i = NULL, t = NULL, lower_tail = TRUE, return_log = FALSE) {
     n <- length(q)
 
     ##
@@ -217,14 +217,14 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
         stop("'mu' has to be larger than 0.")
     }
 
-    if (!is.numeric(theta)) {
-        stop("'theta' has to be numeric.")
+    if (!is.numeric(alpha)) {
+        stop("'alpha' has to be numeric.")
     }
-    else if (!((length(theta) == n) || length(theta) == 1)) {
-        stop("'theta' needs to have length 1, or be the same length as 'x'.")
+    else if (!((length(alpha) == n) || length(alpha) == 1)) {
+        stop("'alpha' needs to have length 1, or be the same length as 'x'.")
     }
-    else if (any(theta <= 0.0)) {
-        stop("'theta' has to be larger than 0.")
+    else if (any(alpha < 0.0)) {
+        stop("'alpha' has to be larger than or equal to 0.")
     }
 
     if (!is.numeric(p)) {
@@ -264,7 +264,7 @@ pitnb <- function(q, mu, theta, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     t <- ceiling(t)
 
     ##
-    log_res <- pitnb_cpp(q, mu, 1 / theta, p, i, t)
+    log_res <- pitnb_cpp(x = q, mu = mu, theta = 1 / alpha, p = p, i = i, t = t)
 
     ##
     res <- log_res[, 1]

@@ -18,5 +18,5 @@ If \code{par} is left as \code{NULL} a list of all parameters will be returned, 
 A function which extracts model coefficients from objects of class \code{itnb}.
 }
 \details{
-The only additional argument used by the function is \code{par} used to specify which parameter should be returned by the function, i.e. it takes the values \code{"beta"}, \code{"theta"}, or \code{"p"}.
+The only additional argument used by the function is \code{par} used to specify which parameter should be returned by the function, i.e. it takes the values \code{"beta"}, \code{"alpha"}, or \code{"p"}.
 }

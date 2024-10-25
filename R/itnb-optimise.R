@@ -172,15 +172,15 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 
     if (link == "identity") {
         beta <- lm_fast_cpp(X[y != i, , drop = FALSE], y[y != i, , drop = FALSE])
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta) - 1)^2)
+        alpha <- sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta) - 1)^2) / length(y)
     }
     else if (link == "sqrt") {
         beta <- lm_fast_cpp(X[y != i, , drop = FALSE], sqrt(y[y != i, , drop = FALSE]))
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta)^2 - 1)^2)
+        alpha <- sum((y[y != i, drop = FALSE] / (X[y != i, , drop = FALSE] %*% beta)^2 - 1)^2) / length(y)
     }
     else if (link == "log") {
         beta <- lm_fast_cpp(X[y != i, , drop = FALSE], log(y[y != i, , drop = FALSE]))
-        theta <- length(y) / sum((y[y != i, drop = FALSE] / exp(X[y != i, , drop = FALSE] %*% beta) - 1)^2)
+        alpha <- sum((y[y != i, drop = FALSE] / exp(X[y != i, , drop = FALSE] %*% beta) - 1)^2) / length(y)
     }
     else {
         stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
@@ -192,7 +192,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 
         res <- mle_itnb_cpp(
             X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
-            beta_0 = beta, theta_0 = theta, p_0 = p,
+            beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
             i = i, t = t, link = link,
             tolerance = control[["tolerance"]], lambda = control[["lambda"]],
             steps = control[["steps"]], exact = control[["exact"]],
@@ -205,7 +205,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
     else if ((t < 0) | (i > t)) {
         res <- em_itnb_cpp(
             X = X, y = y, yi = yi,
-            beta_0 = beta, theta_0 = theta, p_0 = p,
+            beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
             i = i, t = t, link = link,
             iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
             tolerance = control[["tolerance"]], lambda = control[["lambda"]],
@@ -272,7 +272,6 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     #
     res <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
     res[["beta"]] <- structure(res[["beta"]] |> c(), .Names = colnames(X))
-    res[["theta"]] <- 1 / res[["theta"]]
 
     ##
     #
@@ -291,7 +290,6 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
 
         #
         res[["trace"]] <- cbind(Iteration = seq_len(nrow(res[["trace"]])) - 1, res[["trace"]])
-        res[["trace"]][["theta"]] <- 1 / res[["trace"]][["theta"]]
     }
     else {
         res[["trace"]] <- NA
@@ -388,7 +386,7 @@ predict.itnb <- function(object, ...) {
         }
     }
 
-    return(pred[,1])
+    return(pred[, 1])
 }
 
 #' @export
@@ -461,20 +459,34 @@ residuals.itnb <- function(object, ...) {
         }
     }
 
-    pred <- predict(object, newdata = X, type = ifelse(type == "link", "link", "response"))
-    res <- y[,1] - pred
+    pred <- predict(object, newdata = X, type = ifelse(type == "link", "link", "response")) |> unname()
+    res <- y[, 1] - pred
 
     ##
     if (type == "deviance") {
-        theta <- object[["theta"]]
+        #
+        alpha <- object[["alpha"]]
         p <- object[["p"]]
 
+        #
+        i <- object[["i"]]
+        t <- object[["t"]]
+
+        #
+        ll_m <- ditnb(x = y[, 1], mu = pred, alpha = alpha, p = p, i = i, t = t, return_log = TRUE)
+        ll_s <- ditnb(x = y[, 1], mu = y[, 1], alpha = alpha, p = p, i = i, t = t, return_log = TRUE)
+
+        dev <- abs(2.0 * (ll_s - ll_m))
+        res <- unname(sign(y[, 1] - pred) * sqrt(dev))
     }
     else if (type == "pearson") {
-        theta <- object[["theta"]]
+        alpha <- object[["alpha"]]
 
-        s <- sqrt(pred * (1 + theta * pred))
-        res <- res / s
+        s <- sqrt(pred * (1.0 + alpha * pred))
+        res <- unname(res / s)
+    }
+    else {
+        res <- unname(res)
     }
 
     return(res)
@@ -485,7 +497,10 @@ residuals.itnb <- function(object, ...) {
 #' @description Summary function for an \link{itnb-object} (an object of class \code{itnb}).
 #'
 #' @param object \link{itnb-object}.
-#' @param ... Additional arguments are passed to the \link{itnb} and \link{confint.itnb}.
+#' @param ... Additional arguments see details.
+#'
+#' @details FIX FIX FIX
+#'  are passed to the \link{itnb} and \link{confint.itnb}
 #'
 #' @return A function summary.
 #' @export
@@ -497,16 +512,25 @@ summary.itnb <- function(object, ...) {
     if (is.null(level)) {
         level <- 0.95
     }
+    sig_level <- (1 - level) / 2
 
     ##
-    nr_simulations <- dots[["nr_simulations"]]
-    if (is.null(nr_simulations)) {
-        nr_simulations <- 250
+    bootstrap <- dots[["bootstrap"]]
+    if (is.null(bootstrap)) {
+        bootstrap <- TRUE
     }
-    ##
-    parametric <- dots[["parametric"]]
-    if (is.null(parametric)) {
-        parametric <- FALSE
+
+    if (bootstrap) {
+        ##
+        B <- dots[["B"]]
+        if (is.null(B)) {
+            B <- 200
+        }
+        ##
+        parametric <- dots[["parametric"]]
+        if (is.null(parametric)) {
+            parametric <- FALSE
+        }
     }
 
     ##
@@ -518,7 +542,7 @@ summary.itnb <- function(object, ...) {
     ##
     type <- dots[["type"]]
     if (is.null(type)) {
-        type <- "response"
+        type <- "deviance"
     }
 
     ##
@@ -532,36 +556,116 @@ summary.itnb <- function(object, ...) {
     f <- fitted.values(object)
 
     coefs <- coef(object)
-    ci <- confint.itnb(object, level = level, nr_simulations = nr_simulations, parametric = parametric, trace = trace, control = control)
+    se <- sqrt(diag(object[["vcov"]]))
 
-    #
-    betas <- ci[["ci"]][["beta"]]
-    betas[,1] <- coefs[["beta"]]
-    colnames(betas)[grep("%", colnames(betas))] <- paste0(c("Lower (", "Upper ("), colnames(betas)[grep("%", colnames(betas))], c(")", ")"))
+    if (bootstrap) {
+        ci <- confint.itnb(object, level = NULL, B = B, parametric = parametric, trace = trace, control = control)
 
-    #
-    theta <- ci[["ci"]][["theta"]]
-    theta[,1] <- coefs[["theta"]]
-    colnames(theta)[grep("%", colnames(theta))] <- paste0(c("Lower (", "Upper ("), colnames(theta)[grep("%", colnames(theta))], c(")", ")"))
-    rownames(theta) <- paste(rep(" ", max(nchar(rownames(betas)))), collapse = "")
+        ##
+        betas <- lapply(
+            seq_len(ncol(ci[["ci"]][["beta"]])),
+            function(j) {
+                b_j <- coefs[["beta"]][j]
+                se_j <- se[j]
 
-    #
-    p <- ci[["ci"]][["p"]]
-    p[,1] <- coefs[["p"]]
-    colnames(p)[grep("%", colnames(p))] <- paste0(c("Lower (", "Upper ("), colnames(p)[grep("%", colnames(p))], c(")", ")"))
-    rownames(p) <- paste(rep(" ", max(nchar(rownames(betas)))), collapse = "")
+                beta_j <- ci[["ci"]][["beta"]][, j]
+                se_beta_j <- sd(beta_j)
+
+                z_obs_j <- b_j / se_j
+                z_boot_j <- (beta_j - b_j) / se_beta_j
+
+                p_lower_j <- (sum(abs(z_obs_j) < abs(z_boot_j)) + 1) / (length(beta_j) + 1)
+                p_upper_j <- (sum(abs(z_obs_j) >= abs(z_boot_j)) + 1) / (length(beta_j) + 1)
+                p_j <- 2.0 * min(p_lower_j, p_upper_j)
+
+                c(
+                    b_j,
+                    se_j,
+                    quantile(beta_j, probs = c(sig_level, 1 - sig_level)),
+                    mean(beta_j) / se_beta_j,
+                    p_j
+                )
+
+            }) |>
+            (\(z) do.call("rbind", z))() |>
+            structure(.Dimnames = list(
+                colnames(ci[["ci"]][["beta"]]),
+                c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")), "t-value", "Pr(>|t|)")
+            ))
+
+        alpha <- ci[["ci"]][["alpha"]] |>
+            (\(z) c(
+                mean(z),
+                sd(z),
+                quantile(z, probs = c(sig_level, 1 - sig_level))
+            ))() |>
+            matrix(nrow = 1) |>
+            structure(.Dimnames = list(
+                paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
+                c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
+            ))
+
+        p <- ci[["ci"]][["p"]] |>
+            (\(z) c(
+                mean(z),
+                sd(z),
+                quantile(z, probs = c(sig_level, 1 - sig_level))
+            ))() |>
+            matrix(nrow = 1) |>
+            structure(.Dimnames = list(
+                paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
+                c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
+            ))
+
+    }
+    else {
+        betas <- cbind(
+            coefs[["beta"]],
+            se,
+            sqrt(coefs[["beta"]] / se),
+            pnorm(sqrt(coefs[["beta"]] / se), lower.tail = FALSE)
+        ) |>
+            structure(
+                .Dimnames = list(
+                    names(coefs[["beta"]]),
+                    c("Estimate", "Std. Error", "z-value", "Pr(>|z|)")
+                )
+            )
+
+        alpha <- matrix(
+            c(log(1 / coefs[["alpha"]]), object[["logtheta"]]),
+            nrow = 1
+        ) |>
+            structure(
+                .Dimnames = list(
+                    paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""),
+                    c("Estimate", "Std. Error")
+                )
+            )
+
+        p <- matrix(
+            coefs[["p"]],
+            nrow = 1
+        ) |>
+            structure(
+                .Dimnames = list(
+                    paste(rep(" ", max(nchar(names(coefs[["beta"]])))), collapse = ""),
+                    c("Estimate")
+                )
+            )
+    }
 
     ##
     res <- list(
         formula = object[["formula"]],
         link = object[["link"]],
         residuals = r,
+        type = type,
         level = level,
         coefficients = betas,
-        overdispersion = theta,
+        overdispersion = alpha,
         inflation = p,
-        parametric = parametric,
-        nr_simulations = nr_simulations,
+        bootstrap = if (bootstrap) ci else NA,
         iterations = object[["iterations"]]
     )
 
@@ -584,21 +688,37 @@ print.summary.itnb <- function(x, ...) {
     cat("\n")
 
     ##
-    cat("Coefficients:\n")
-    print(x[["coefficients"]])
-    cat("\n")
-
-    cat("Overdispersion:\n")
-    print(x[["overdispersion"]])
-    cat("\n")
-
-    cat("Inflation proportion:\n")
-    print(x[["inflation"]])
+    #
+    cat(paste0("Residuals (", x[["type"]], "):"), "\n")
+    print(summary(x[["residuals"]]), ...)
     cat("\n")
 
     ##
-    cat("(Based on", x[["nr_simulations"]], ifelse(x[["parametric"]], "parametric", "non-parametric"), "bootstrap simulations).\n")
+    #
+    cat("Coefficients:\n")
+    printCoefmat(x[["coefficients"]], ...)
     cat("\n")
+
+    #
+    cat("Inflation:\n")
+    print(x[["inflation"]], ...)
+    cat("\n")
+
+    #
+    if (!all(is.na(x[["bootstrap"]]))) {
+        cat("Overdispersion:\n")
+    }
+    else {
+        cat("Overdispersion (shown for log(1 / alpha)):\n")
+    }
+    print(x[["overdispersion"]], ...)
+    cat("\n")
+
+    ##
+    if (!all(is.na(x[["bootstrap"]]))) {
+        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples).\n")
+        cat("\n")
+    }
 
     ##
     cat("Number of EM iterations:", x[["iterations"]], "\n")
@@ -614,7 +734,7 @@ print.summary.itnb <- function(x, ...) {
 #' @param object \link{itnb-object}.
 #' @param ... Additional arguments (see details).
 #'
-#' @details The only additional argument used by the function is \code{par} used to specify which parameter should be returned by the function, i.e. it takes the values \code{"beta"}, \code{"theta"}, or \code{"p"}.
+#' @details The only additional argument used by the function is \code{par} used to specify which parameter should be returned by the function, i.e. it takes the values \code{"beta"}, \code{"alpha"}, or \code{"p"}.
 #'
 #' @return If \code{par} is left as \code{NULL} a list of all parameters will be returned, otherwise the function returns the parameter specified by \code{par}.
 #' @export
@@ -622,19 +742,19 @@ coef.itnb <- function(object, ...) {
     dots <- list(...)
 
     if (is.null(dots[["par"]])) {
-        r <- object[c("beta", "theta", "p")]
+        r <- object[c("beta", "alpha", "p")]
     }
     else if (dots[["par"]] == "beta") {
         r <- object[["beta"]]
     }
-    else if (dots[["par"]] == "theta") {
-        r <- object[["theta"]]
+    else if (dots[["par"]] == "alpha") {
+        r <- object[["alpha"]]
     }
     else if (dots[["par"]] == "p") {
         r <- object[["p"]]
     }
     else {
-        stop("'pars' only takes the values 'beta', 'theta', or 'p'.")
+        stop("'pars' only takes the values 'beta', 'alpha', or 'p'.")
     }
 
     return(r)
@@ -660,14 +780,14 @@ plot.itnb <- function(x, which = NULL, ...) {
     itnb_trace <- x[["trace"]][-1, ]
 
     ##
-    betas <- names(itnb_trace)[!(names(itnb_trace) %in% c("Iteration", "LogLikelihood", "theta", "p"))]
+    betas <- names(itnb_trace)[!(names(itnb_trace) %in% c("Iteration", "LogLikelihood", "alpha", "p"))]
     if (is.null(which)) {
         ##
         plot(itnb_trace[["Iteration"]], itnb_trace[["LogLikelihood"]], type = "l", xlab = "Iteration", ylab = "Log-likelihood", ...)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
         ##
-        plot(itnb_trace[["Iteration"]], itnb_trace[["theta"]], type = "l", xlab = "Iteration", ylab = bquote(theta * ": Overdispersion"), ...)
+        plot(itnb_trace[["Iteration"]], itnb_trace[["alpha"]], type = "l", xlab = "Iteration", ylab = bquote(alpha * ": Overdispersion"), ...)
         invisible(readline(prompt="Press [ENTER] to continue"))
 
         plot(itnb_trace[["Iteration"]], itnb_trace[["p"]], type = "l", xlab = "Iteration", ylab = bquote(pi * ": Inflation proportion"), ...)
@@ -698,8 +818,8 @@ plot.itnb <- function(x, which = NULL, ...) {
             }
         }
     }
-    else if (all(which %in% c("theta", "overdispersion"))) {
-        plot(itnb_trace[["Iteration"]], itnb_trace[["theta"]], type = "l", xlab = "Iteration", ylab = bquote(theta * ": Overdispersion"), ...)
+    else if (all(which %in% c("alpha", "overdispersion"))) {
+        plot(itnb_trace[["Iteration"]], itnb_trace[["alpha"]], type = "l", xlab = "Iteration", ylab = bquote(alpha * ": Overdispersion"), ...)
     }
     else if (all(which %in% c("p", "pi", "inflation"))) {
         plot(itnb_trace[["Iteration"]], itnb_trace[["p"]], type = "l", xlab = "Iteration", ylab = bquote(pi * ": Inflation proportion"), ...)
