@@ -20,15 +20,15 @@ i <- 2
 t <- 1
 
 beta <- c(1, 2)
-theta <- 10
+alpha <- 0.5
 p <- 0.2
 
 ## Generating covariates
 x <- sort(runif(n, 0, 4))
-mu <- cbind(1, x) %*% beta
+mu <- exp(cbind(1, x) %*% beta)
 
 ## Generating response
-y <- ritnb(n = n, mu = mu, theta = theta, p = p, i = i, t = t)
+y <- ritnb(n = n, mu = mu, alpha = alpha, p = p, i = i, t = t)
 data <- data.frame(y = y, x = x)
 
 ## Estimating parameters
@@ -37,8 +37,10 @@ m <- itnb(
     data = data,
     i = i,
     t = t,
-    link = "identity"
+    link = "log"
 )
+
+summary(m)
 
 ## Plotting trace of EM-algorithm 
 plot(m, log = "x")
@@ -54,7 +56,7 @@ ci_p <- confint(
 ci_np <- confint(
     m, 
     level = 0.95, 
-    nr_simulations = 25, 
+    B = 25, 
     parametric = TRUE
 )
 ```

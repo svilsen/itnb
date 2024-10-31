@@ -524,7 +524,7 @@ summary.itnb <- function(object, ...) {
         ##
         B <- dots[["B"]]
         if (is.null(B)) {
-            B <- 200
+            B <- 199
         }
         ##
         parametric <- dots[["parametric"]]
@@ -659,6 +659,8 @@ summary.itnb <- function(object, ...) {
     res <- list(
         formula = object[["formula"]],
         link = object[["link"]],
+        i = object[["i"]],
+        t = object[["t"]],
         residuals = r,
         type = type,
         level = level,
@@ -679,17 +681,24 @@ print.summary.itnb <- function(x, ...) {
     cat("\n")
 
     ##
-    cat("Formula:\n")
-    cat(deparse(x[["formula"]]), "\n")
+    cat("Formula:\n", deparse(x[["formula"]]), "\n")
     cat("\n")
 
-    cat("Link:\n")
-    cat(x[["link"]], "\n")
+    cat("Link:\n", x[["link"]], "\n")
+    cat("\n")
+
+    cat("Inflation point:", x[["i"]], "\n")
+    cat("\n")
+
+    cat("Trunctation point:", x[["t"]], "\n")
     cat("\n")
 
     ##
     #
-    cat(paste0("Residuals (", x[["type"]], "):"), "\n")
+    res_type <- x[["type"]] |> tolower()
+    substr(res_type, 1, 1) <- toupper(substr(res_type, 1, 1))
+
+    cat(res_type, "residuals:", "\n")
     print(summary(x[["residuals"]]), ...)
     cat("\n")
 
@@ -700,8 +709,8 @@ print.summary.itnb <- function(x, ...) {
     cat("\n")
 
     #
-    cat("Inflation:\n")
-    print(x[["inflation"]], ...)
+    cat("Inflation coefficients:\n")
+    printCoefmat(x[["inflation"]], ...)
     cat("\n")
 
     #
@@ -716,7 +725,7 @@ print.summary.itnb <- function(x, ...) {
 
     ##
     if (!all(is.na(x[["bootstrap"]]))) {
-        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples).\n")
+        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples => p-value lower bound of", paste0(format(2 / (x[["bootstrap"]][["B"]] + 1), digits = 3), ")."), "\n")
         cat("\n")
     }
 
@@ -760,73 +769,3 @@ coef.itnb <- function(object, ...) {
     return(r)
 }
 
-#' Plot the trace of an \link{itnb-object}
-#'
-#' @description A function plotting the EM parameter trace returned by the \link{itnb} function. NB: the function can only be used if the argument \code{save_trace} in the \link{itnb_control} function was set to \code{TRUE}, and the inflation cannot be separated from the truncated negative binomial regression model.
-#'
-#' @param x \link{itnb-object}.
-#' @param which String: Indicating which trace to show (either the log-likelihood or a parameter). If left \code{NULL}, the function shows all traces.
-#' @param ... Additional arguments passed to the \link[graphics]{plot} function.
-#'
-#' @export
-plot.itnb <- function(x, which = NULL, ...) {
-    ##
-    dots <- list(...)
-    if (all(is.na(x[["trace"]]))) {
-        stop("The 'trace' data.frame was not found. Set 'save_trace = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
-    }
-
-    ##
-    itnb_trace <- x[["trace"]][-1, ]
-
-    ##
-    betas <- names(itnb_trace)[!(names(itnb_trace) %in% c("Iteration", "LogLikelihood", "alpha", "p"))]
-    if (is.null(which)) {
-        ##
-        plot(itnb_trace[["Iteration"]], itnb_trace[["LogLikelihood"]], type = "l", xlab = "Iteration", ylab = "Log-likelihood", ...)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        ##
-        plot(itnb_trace[["Iteration"]], itnb_trace[["alpha"]], type = "l", xlab = "Iteration", ylab = bquote(alpha * ": Overdispersion"), ...)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        plot(itnb_trace[["Iteration"]], itnb_trace[["p"]], type = "l", xlab = "Iteration", ylab = bquote(pi * ": Inflation proportion"), ...)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        ##
-        for (i in seq_along(betas)) {
-            plot(itnb_trace[["Iteration"]], itnb_trace[[betas[i]]], type = "l", xlab = "Iteration", ylab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ...)
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
-    }
-    else if (all(which == "LogLikelihood")) {
-        plot(itnb_trace[["Iteration"]], itnb_trace[["LogLikelihood"]], type = "l", xlab = "Iteration", ylab = "Log-likelihood", ...)
-    }
-    else if (all(which %in% c("mu", "beta", "covariates"))) {
-        for (i in seq_along(betas)) {
-            plot(itnb_trace[["Iteration"]], itnb_trace[[betas[i]]], type = "l", xlab = "Iteration", ylab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ...)
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
-    }
-    else if (all(which %in% betas)) {
-        betas_ <- betas[betas %in% which]
-        betas_index_ <- which(betas %in% which)
-        for (i in seq_along(betas_)) {
-            plot(itnb_trace[["Iteration"]], itnb_trace[[betas_[i]]], type = "l", xlab = "Iteration", ylab = bquote(beta[.(betas_index_[i] - 1)] * ": Covariate '" * .(betas_[i]) * "'"), ...)
-            if (length(betas_) > 1) {
-                invisible(readline(prompt="Press [ENTER] to continue"))
-            }
-        }
-    }
-    else if (all(which %in% c("alpha", "overdispersion"))) {
-        plot(itnb_trace[["Iteration"]], itnb_trace[["alpha"]], type = "l", xlab = "Iteration", ylab = bquote(alpha * ": Overdispersion"), ...)
-    }
-    else if (all(which %in% c("p", "pi", "inflation"))) {
-        plot(itnb_trace[["Iteration"]], itnb_trace[["p"]], type = "l", xlab = "Iteration", ylab = bquote(pi * ": Inflation proportion"), ...)
-    }
-    else {
-        stop("'which' has to be NULL, or specify a column of the trace data.frame (excluding the 'Iteration' column).")
-    }
-
-    return(invisible(NULL))
-}

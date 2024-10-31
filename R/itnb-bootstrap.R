@@ -88,7 +88,7 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
 
         if (parametric) {
             X_b <- X
-            y_b <- matrix(ritnb(n = N, mu = mu, alpha = alpha, p = p, i = i, t = t), ncol = 1)
+            y_b <- ritnb(n = N, mu = mu, alpha = alpha, p = p, i = i, t = t) |> matrix(ncol = 1)
         } else {
             i_b <- sample(N, N, replace = TRUE)
 
@@ -129,196 +129,119 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
     return(res)
 }
 
-#' Plot histograms of bootstrapped \link{itnb-object}
+
+#' Likelihood ratio tests
 #'
-#' @description A function plotting bootstrapped parameter estimates returned from the \link{confint.itnb} function.
+#' @description Likelihood ratio tests for the need of inflation and/or overdispersion in inflated and truncated negative binomial regression models.
 #'
-#' @param x \link{itnb.ci-object}.
-#' @param which String: Indicating which parameter(s) to show. If left \code{NULL}, the function shows histograms of all parameters
-#' @param ... Additional arguments passed to the \link[graphics]{hist} function.
+#' @param object An \link{itnb-object}.
+#' @param type String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.
+#' @param level Numeric: The significance level.
+#' @param ... Additional parameters (see details).
+#'
+#' @details ...
+#'
+#' @return An \link{lrtest-object}.
 #'
 #' @export
-hist.itnb.ci <- function(x, which = NULL, ...) {
-    #
-    if (!is.na(x[["level"]])) {
-        stop("'level' found in 'ci-object' implying the results have been aggregated; to use function re-run 'ci-object' setting 'level = NULL'.")
-    }
-
-    #
-    beta_e <- x[["ci"]][["beta"]]
-    betas <- colnames(beta_e)
-
-    #
-    alpha_e <- x[["ci"]][["alpha"]]
-
-    #
-    p_e <- x[["ci"]][["p"]]
-
-    #
-    if (is.null(which)) {
-        #
-        hist(alpha_e, breaks = "fd", xlab = bquote(alpha), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        #
-        for (i in seq_along(betas)) {
-            hist(beta_e[, i], breaks = "fd", xlab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
-    }
-    else if (all(which %in% c("mu", "beta", "covariates"))) {
-        for (i in seq_along(betas)) {
-            hist(beta_e[, i], breaks = "fd", xlab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
-    }
-    else if (all(which %in% betas)) {
-        betas_ <- betas[betas %in% which]
-        betas_index_ <- which(betas %in% which)
-        for (i in seq_along(betas_)) {
-            hist(beta_e[, betas_[i]], breaks = "fd", xlab = bquote(beta[.(betas_index_[i] - 1)] * ": Covariate '" * .(betas_[i]) * "'"), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-            if (length(betas_) > 1) {
-                invisible(readline(prompt="Press [ENTER] to continue"))
-            }
-        }
-    }
-    else if (all(which %in% c("alpha", "overdispersion"))) {
-        hist(alpha_e, breaks = "fd", xlab = bquote(alpha), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-    }
-    else if (all(which %in% c("p", "pi", "inflation"))) {
-        hist(p_e, breaks = "fd", xlab = bquote(pi), ylab = "Density", probability = TRUE, main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"), cex.lab = 1.5, cex.main = 1.5, ...)
-    }
-    else {
-        stop("'which' has to be NULL, or specify the name of a parameter.")
-    }
-
-    return(invisible(NULL))
+lrtest <- function(object, type = "overdispersion", level = 0.05, ...) {
+    UseMethod("lrtest")
 }
 
-#' Quantiles of bootstrapped \link{itnb-object}
-#'
-#' @description A function plotting quantiles of parameter estimates returned from the \link{confint.itnb} function.
-#'
-#' @param x \link{itnb.ci-object}.
-#' @param which String: Indicating the column of the trace to be shown (i.e.\ the log-likelihood or the name of a parameter). If left \code{NULL}, the function shows all traces.
-#' @param ... Additional arguments passed to the \link[graphics]{hist} function.
+#' @rdname lrtest
+#' @method lrtest itnb
 #'
 #' @export
-plot.itnb.ci <- function(x, which = NULL, ...) {
-    #
+lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     dots <- list(...)
-    if (is.na(x[["level"]]) & is.null(dots[["level"]])) {
-        stop("'level' not found in either 'ci-object', or as part of '...' argument; to use function re-run 'ci-object', or 'plot' setting a value for 'level'.")
-    }
-    else if (is.na(x[["level"]])) {
-        #
-        level <- dots[["level"]]
-        sig_level <- (1 - level) / 2
-
-        #
-        beta_e <- x[["ci"]][["beta"]] |> apply(2, quantile, probs = c(sig_level, 0.5, 1 - sig_level))
-        betas <- colnames(beta_e)
-
-        #
-        alpha_e <- x[["ci"]][["alpha"]] |> quantile(probs = c(sig_level, 0.5, 1 - sig_level))
-
-        #
-        p_e <- x[["ci"]][["p"]] |> quantile(probs = c(sig_level, 0.5, 1 - sig_level))
+    if (is.null(dots[["control"]])) {
+        control <- do.call(itnb_control, list())
     }
     else {
-        beta_e <- x[["ci"]][["beta"]]
-        betas <- colnames(beta_e)
-
-        #
-        alpha_e <- x[["ci"]][["alpha"]]
-
-        #
-        p_e <- x[["ci"]][["p"]]
+        control <- dots[["control"]]
     }
 
+    ##
+    X <- object[["data"]][["X"]]
+    y <- object[["data"]][["y"]]
+
+    N <- length(y)
+    i <- object[["i"]]
+    t <- object[["t"]]
+    link <- object[["link"]]
+
+    ##
+    loglike_o <- object[["loglikelihood"]]
+    if (type %in% c("o", "overdispersion")) {
+        type <- "overdisperion"
+
+        poisson_model <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
+        loglike_s <- object[["loglikelihood"]]
+    }
+    else if (type %in% c("i", "inflation")) {
+        type <- "inflation"
+
+        without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
+        loglike_s <- without_inflation[["loglikelihood"]]
+    }
+    else if (type %in% c("b", "both")) {
+        type = "both"
+        loglike_s <- object[["loglikelihood"]]
+    }
+    else {
+        stop("'type' only takes the values 'overdispersion', 'inflation', or 'both'.")
+    }
+
+    d <- 2.0 * (loglike_o - loglike_s)
+
+    crit_val <- qchisq(1.0 - 2.0 * level, df = 1)
+    p_val <- pchisq(d, df = 1, lower.tail = FALSE) / 2
+
+    res <- list(
+        lr = d,
+        df = 1,
+        critval = crit_val,
+        pval = p_val,
+        type = type,
+        level = level
+    )
+
+    class(res) <- "lrtest.itnb"
+    return(res)
+}
+
+#' @export
+print.lrtest.itnb <- function(x, ...) {
+    dots <- list(...)
+    if (!("digits" %in% dots)) {
+        dots[["digits"]] <- max(3, getOption("digits") - 3)
+    }
+
+    cat("\n")
+
+    ##
     #
-    if (is.null(which)) {
-        #
-        plot(alpha_e[2], 0,
-             xlim = c(alpha_e[1] - 0.05 * alpha_e[1], alpha_e[3] + 0.05 * alpha_e[3]), ylim = c(-1, 1),
-             xlab = bquote(alpha), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-             pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-             yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = alpha_e[1], y0 = 0, x1 = alpha_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        plot(p_e[2], 0,
-             xlim = c(p_e[1] - 0.05 * p_e[1], p_e[3] + 0.05 * p_e[3]), ylim = c(-1, 1),
-             xlab = bquote(pi), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-             pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-             yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = p_e[1], y0 = 0, x1 = p_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
-
-        invisible(readline(prompt="Press [ENTER] to continue"))
-
-        #
-        for (i in seq_along(betas)) {
-            plot(beta_e[2, i], 0,
-                 xlim = c(beta_e[1, i] - 0.05 * beta_e[1, i], beta_e[3, i] + 0.05 * beta_e[3, i]),
-                 ylim = c(-1, 1),
-                 xlab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ylab = "", main = paste(paste0(100 * x$level, "%"), ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-                 pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-                 yaxt = "n", frame.plot = FALSE)
-            arrows(x0 = beta_e[1, i], y0 = 0, x1 = beta_e[3, i], y1 = 0, code = 3, angle = 90, length = 0.2)
-
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
+    if (x[["type"]] %in% c("overdisperion")) {
+        cat("Likelihood ratio test of H0: alpha = 0\n")
     }
-    else if (all(which %in% c("mu", "beta", "covariates"))) {
-        for (i in seq_along(betas)) {
-            plot(beta_e[2, i], 0,
-                 xlim = c(beta_e[1, i] - 0.05 * beta_e[1, i], beta_e[3, i] + 0.05 * beta_e[3, i]),
-                 ylim = c(-1, 1),
-                 xlab = bquote(beta[.(i - 1)] * ": Covariate '" * .(betas[i]) * "'"), ylab = "", main = paste(paste0(100 * x$level, "%"), ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-                 pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-                 yaxt = "n", frame.plot = FALSE)
-            arrows(x0 = beta_e[1, i], y0 = 0, x1 = beta_e[3, i], y1 = 0, code = 3, angle = 90, length = 0.2)
 
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
+    ##
+    #
+    if (x[["type"]] %in% c("inflation")) {
+        cat("Likelihood ratio test of H0: p = 0\n")
     }
-    else if (all(which %in% betas)) {
-        betas_ <- betas[betas %in% which]
-        betas_index_ <- which(betas %in% which)
-        for (i in seq_along(betas_)) {
-            plot(beta_e[2, i], 0,
-                 xlim = c(beta_e[1, betas_[i]] - 0.05 * beta_e[1, betas_[i]], beta_e[3, betas_[i]] + 0.05 * beta_e[3, betas_[i]]),
-                 ylim = c(-1, 1),
-                 xlab = bquote(beta[.(betas_index_[i] - 1)] * ": Covariate '" * .(betas_[i]) * "'"), ylab = "", main = paste(paste0(100 * x$level, "%"), ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-                 pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-                 yaxt = "n", frame.plot = FALSE)
-            arrows(x0 = beta_e[1, betas_[i]], y0 = 0, x1 = beta_e[3, betas_[i]], y1 = 0, code = 3, angle = 90, length = 0.2)
 
-            invisible(readline(prompt="Press [ENTER] to continue"))
-        }
+    ##
+    #
+    if (x[["type"]] %in% c("both")) {
+        cat("Likelihood ratio test of H0: alpha = 0 and p = 0\n")
     }
-    else if (all(which %in% c("alpha", "overdispersion"))) {
-        plot(alpha_e[2], 0,
-             xlim = c(alpha_e[1] - 0.05 * alpha_e[1], alpha_e[3] + 0.05 * alpha_e[3]), ylim = c(-1, 1),
-             xlab = bquote(alpha), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-             pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-             yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = alpha_e[1], y0 = 0, x1 = alpha_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
-    }
-    else if (all(which %in% c("p", "pi", "inflation"))) {
-        plot(p_e[2], 0,
-             xlim = c(p_e[1] - 0.05 * p_e[1], p_e[3] + 0.05 * p_e[3]), ylim = c(-1, 1),
-             xlab = bquote(pi), ylab = "", main = paste(ifelse(x$parametric, "Parametric", "Non-parametric"), "bootstrap samples"),
-             pch = 16, cex = 2, cex.lab = 1.5, cex.main = 1.5,
-             yaxt = "n", frame.plot = FALSE)
-        arrows(x0 = p_e[1], y0 = 0, x1 = p_e[3], y1 = 0, code = 3, angle = 90, length = 0.2)
-    }
-    else {
-        stop("'which' has to be NULL, or specify the name of a parameter.")
-    }
+
+    cat(" ", paste0("Critical value (level = ", round(x[["level"]], dots[["digits"]]), "): "), round(x[["critval"]], dots[["digits"]]), "\n")
+    cat(" ", "LR test statistic: ", round(x[["lr"]], dots[["digits"]]), "\n")
+    cat(" ", "P-value:", format.pval(x[["pval"]], digits = dots[["digits"]]), "\n")
+
+    cat("\n")
 
     return(invisible(NULL))
 }
