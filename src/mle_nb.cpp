@@ -1,0 +1,248 @@
+#include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
+#include <roptim.h>
+// [[Rcpp::depends(roptim)]]
+
+#include "rdp.hpp"
+#include "links.hpp"
+#include "aux.hpp"
+
+using namespace roptim;
+
+//// Truncated negative binomial parameters
+class MLE: public Functor {
+public:
+    double lambda;
+
+    // Constructor
+    MLE(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, const double & lambda_, Link & LO_) :
+        lambda(lambda_), X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
+
+    // Functor / objective function
+    double operator()(const arma::vec & par) override {
+        const arma::vec & beta = par.head(M);
+        const double & theta = std::exp(par[M]);
+
+        //
+        double d = 0.0;
+        double penalisation = 0.0;
+        for (int n = 0; n < N; n++) {
+            //
+            const arma::rowvec & x_n = X.row(n);
+            const arma::vec eta_n = x_n * beta;
+
+            const double mu_n = LO.link_inv(eta_n[0]);
+
+            const double e = (mu_n - (t + 1));
+            double g = 0.0;
+            if (e < 0) {
+                g = e * e;
+            }
+
+            const double d_n = ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
+
+            d -= d_n;
+            penalisation += lambda * g;
+        }
+
+        if (std::isinf(d) || std::isnan(d)) {
+            d = 1e16;
+        }
+
+        return d + penalisation;
+    }
+
+    // Gradient function
+    void Gradient(const arma::vec & par, arma::vec & gr) override {
+        //
+        gr = arma::zeros(M + 1);
+        if (exact) {
+            const arma::vec & beta = par.head(M);
+            const double & theta = std::exp(par[M]);
+
+            for (int n = 0; n < N; n++) {
+                //
+                const arma::rowvec & x_n = X.row(n);
+                const arma::vec eta_n = x_n * beta;
+                const double mu_n = LO.link_inv(eta_n[0]);
+
+                //
+                const double & mu_theta = mu_n + theta;
+                const double & mu_theta_i = 1.0 / mu_theta;
+
+                const double & y_theta = y[n] + theta;
+
+                //
+                double gr_beta = (y[n] / mu_n - y_theta * mu_theta_i);
+                double gr_theta = (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
+                if (t > -1) {
+                    const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
+
+                    // Location
+                    const double & b_mu_n = std::pow(mu_n, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
+                    const double & I_mu = b_mu_n / b;
+
+                    gr_beta += (-I_mu);
+
+                    // Overdispersion
+                    const double & b_t_f = std::pow(mu_n, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
+                    const double & b_t_i = beta_derivative_rectangle(0.0, mu_n * mu_theta_i, theta, t, steps);
+                    const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
+
+                    const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
+                    gr_theta += (-I_theta);
+                }
+
+                //
+                for (int m = 0; m < M; m++) {
+                    double gr_g = 0.0;
+                    if (mu_n < (t + 1)) {
+                        gr_g = 2.0 * (mu_n - (t + 1));
+                    }
+
+                    const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
+                    gr[m] += (-gr_beta + lambda * gr_g) * gr_mu;
+                }
+
+                //
+                gr[M] += (-gr_theta) * theta;
+            }
+        }
+        else{
+            ApproximateGradient(par, gr);
+        }
+    }
+
+private:
+    // Data
+    arma::mat X;
+    arma::vec y;
+
+    // Number of observations
+    int N;
+    int M;
+
+    // Parameters
+    int i;
+    int t;
+
+    // Integral precision
+    int steps;
+
+    //
+    bool exact;
+
+    // Link
+    Link LO;
+};
+
+//// Optimiser
+void optimise_tnb(
+        arma::vec & beta_j, double & theta_j, const double & p_0, double & loglike_j,
+        int & j, bool & not_converged, std::string & convergence_flag, arma::mat & approx_hessian,
+        const arma::mat & X, const arma::vec & y,
+        const int & i, const int & t, const std::string & link,
+        const int & N, const int & M,
+        const double & tolerance, const arma::vec & lambda,
+        const int & steps, const bool & exact,
+        const int & trace
+) {
+    //
+    not_converged = true;
+    convergence_flag = "";
+
+    //
+    Link LO(link);
+
+    //
+    arma::vec pars_j = arma::vec(M + 1);
+    pars_j.head(M) = beta_j;
+    pars_j[M] = std::log(theta_j);
+
+    //
+    Roptim<MLE> opt("L-BFGS-B");
+    MLE r_log_likelihood(X, y, i, t, steps, exact, lambda[0], LO);
+
+    opt.control.trace = trace;
+
+    //
+    opt.minimize(r_log_likelihood, pars_j);
+    pars_j = opt.par();
+
+    //
+    beta_j = pars_j.head(M);
+    theta_j = std::exp(pars_j[M]);
+
+    //
+    loglike_j = loglikelihood(X, y, beta_j, theta_j, p_0, i, t, N, LO);
+    r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
+}
+
+
+//// R interface
+// [[Rcpp::export]]
+Rcpp::List mle_tnb_cpp(
+        const arma::mat & X, const arma::vec & y,
+        const arma::vec & beta_0, const double & theta_0, const double & p_0,
+        const int & i, const int & t, const std::string & link,
+        const double & tolerance, const arma::vec & lambda,
+        const int & steps, const bool & exact,
+        const int & trace
+) {
+    //
+    const int & N = y.size();
+    const int & M = X.n_cols;
+
+    //
+    int j = 0;
+    bool not_converged;
+    std::string convergence_flag;
+
+    //
+    arma::vec beta_j = beta_0;
+    double theta_j = theta_0;
+
+    //
+    double loglike_j = 0.0;
+
+    //
+    arma::mat approx_hessian = arma::mat(beta_j.size() + 1, beta_j.size() + 1);
+
+    //
+    optimise_tnb(
+        beta_j, theta_j, p_0, loglike_j,
+        j, not_converged, convergence_flag,
+        approx_hessian,
+        X, y, i, t, link, N, M,
+        tolerance, lambda,
+        steps, exact, trace
+    );
+
+    //
+    arma::mat vcov = arma::inv(approx_hessian);
+    double se_logtheta = std::sqrt(vcov(beta_j.size(), beta_j.size()));
+
+    vcov.shed_col(beta_j.size());
+    vcov.shed_row(beta_j.size());
+
+    //
+    return Rcpp::List::create(
+        Rcpp::Named("formula") = 0,
+        Rcpp::Named("data") = 0,
+        Rcpp::Named("i") = i,
+        Rcpp::Named("t") = t,
+        Rcpp::Named("link") = link,
+        Rcpp::Named("loglikelihood") = loglike_j,
+        Rcpp::Named("beta") = beta_j,
+        Rcpp::Named("alpha") = 1.0 / theta_j,
+        Rcpp::Named("p") = p_0,
+        Rcpp::Named("vcov") = vcov,
+        Rcpp::Named("logtheta") = se_logtheta,
+        Rcpp::Named("trace") = 0,
+        Rcpp::Named("overdispersion") = false,
+        Rcpp::Named("converged") = !not_converged,
+        Rcpp::Named("iterations") = 0,
+        Rcpp::Named("flag") = convergence_flag
+    );
+}

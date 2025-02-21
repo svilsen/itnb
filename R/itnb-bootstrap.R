@@ -174,19 +174,24 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     loglike_o <- object[["loglikelihood"]]
     if (type %in% c("o", "overdispersion")) {
         type <- "overdisperion"
+        df <- 1
 
-        poisson_model <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
-        loglike_s <- object[["loglikelihood"]]
+        poisson_m <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
+        loglike_s <- poisson_m[["loglikelihood"]]
     }
     else if (type %in% c("i", "inflation")) {
         type <- "inflation"
+        df <- 1
 
         without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
         loglike_s <- without_inflation[["loglikelihood"]]
     }
     else if (type %in% c("b", "both")) {
-        type = "both"
-        loglike_s <- object[["loglikelihood"]]
+        type <- "both"
+        df <- 2
+
+        poisson_without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
+        loglike_s <- poisson_without_inflation[["loglikelihood"]]
     }
     else {
         stop("'type' only takes the values 'overdispersion', 'inflation', or 'both'.")
@@ -194,12 +199,12 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
     d <- 2.0 * (loglike_o - loglike_s)
 
-    crit_val <- qchisq(1.0 - 2.0 * level, df = 1)
-    p_val <- pchisq(d, df = 1, lower.tail = FALSE) / 2
+    crit_val <- qchisq(1.0 - 2.0 * level, df = df)
+    p_val <- pchisq(d, df = df, lower.tail = FALSE) / 2
 
     res <- list(
         lr = d,
-        df = 1,
+        df = df,
         critval = crit_val,
         pval = p_val,
         type = type,
@@ -238,7 +243,7 @@ print.lrtest.itnb <- function(x, ...) {
     }
 
     cat(" ", paste0("Critical value (level = ", round(x[["level"]], dots[["digits"]]), "): "), round(x[["critval"]], dots[["digits"]]), "\n")
-    cat(" ", "LR test statistic: ", round(x[["lr"]], dots[["digits"]]), "\n")
+    cat(" ", "Test statistic: ", round(x[["lr"]], dots[["digits"]]), "\n")
     cat(" ", "P-value:", format.pval(x[["pval"]], digits = dots[["digits"]]), "\n")
 
     cat("\n")

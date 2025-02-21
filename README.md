@@ -15,13 +15,13 @@ devtools::install_github("svilsen/itnb")
 library("itnb")
 
 ## Setting parameters
-n <- 2000
+n <- 150
 i <- 2
 t <- 1
 
-beta <- c(1, 2)
+beta <- c(0.5, 2)
 alpha <- 0.5
-p <- 0.2
+p <- 0.1
 
 ## Generating covariates
 x <- sort(runif(n, 0, 4))
@@ -41,24 +41,6 @@ m <- itnb(
 )
 
 summary(m)
-
-## Plotting trace of EM-algorithm 
-plot(m, log = "x")
-
-## Simulating CI's
-ci_p <- confint(
-    m, 
-    level = 0.95, 
-    nr_simulations = 25, 
-    parametric = FALSE
-)
-
-ci_np <- confint(
-    m, 
-    level = 0.95, 
-    B = 25, 
-    parametric = TRUE
-)
 ```
 
 ## License

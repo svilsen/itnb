@@ -4,43 +4,11 @@
 #include <roptim.h>
 // [[Rcpp::depends(roptim)]]
 
-#include "rdp_functions.hpp"
-#include "link_functions.hpp"
-#include "aux_functions.hpp"
+#include "rdp.hpp"
+#include "links.hpp"
+#include "aux.hpp"
 
 using namespace roptim;
-
-//// Expectation step
-void update_z(arma::vec & z, const arma::mat & X, const arma::vec & y, const arma::vec & yi, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
-    //
-    for (int n = 0; n < N; n++) {
-        //
-        const arma::rowvec & x_n = X.row(n);
-        const arma::vec eta_n = x_n * beta;
-        const double & mu_n = LO.link_inv(eta_n[0]);
-
-        //
-        double d_n = std::exp(ditnb_cpp(y[n], mu_n, theta, 0.0, i, t));
-        z[n] = (p * yi[n]) / (p * yi[n] + (1.0 - p) * d_n);
-    }
-}
-
-//// Maximisation step
-// Inflation proportion
-void update_p(double & p, const arma::vec & yi, const arma::vec & z, const int & N) {
-    double num = 0.0;
-    double denom = 0.0;
-    for (int n = 0; n < N; n++) {
-        num += (z[n] * yi[n]);
-        denom += (1.0 + z[n] * (yi[n] - 1.0));
-    }
-
-    p = num / denom;
-
-    if (p < 1e-16) {
-        p = 4e-16;
-    }
-}
 
 // Truncated negative binomial parameters
 class EM : public Functor {
@@ -67,14 +35,19 @@ public:
             const arma::vec eta_n = x_n * beta;
             const double mu_n = LO.link_inv(eta_n[0]);
 
-            const double e = (mu_n - (t + 1));
+            const double r = (mu_n - (t + 1));
             double g = 0.0;
-            if (e < 0) {
-                g = e * e;
+            if (r < 0) {
+                g = r * r;
             }
 
             d += (z[n] - 1.0) * ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
             penalisation += lambda * g;
+
+        }
+
+        if (std::isinf(d) || std::isnan(d)) {
+            d = 1e16;
         }
 
         return d + penalisation;
@@ -219,7 +192,6 @@ void optimise_itnb(
         //
         const double p_j_old = p_j;
 
-        //
         pars_j_old.head(M) = beta_j;
         pars_j_old[M] = std::log(theta_j);
 
@@ -290,6 +262,7 @@ void optimise_itnb(
     r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 
+//// R interface
 // [[Rcpp::export]]
 Rcpp::List em_itnb_cpp(
         const arma::mat & X, const arma::vec & y, const arma::vec & yi,
@@ -311,9 +284,6 @@ Rcpp::List em_itnb_cpp(
 
     //
     double p_j = p_0;
-    if (p_j < 1e-16) {
-        p_j = 4e-16;
-    }
 
     //
     arma::vec beta_j = beta_0;
@@ -387,6 +357,7 @@ Rcpp::List em_itnb_cpp(
         Rcpp::Named("vcov") = vcov,
         Rcpp::Named("logtheta") = se_logtheta,
         Rcpp::Named("trace") = trace_list,
+        Rcpp::Named("overdispersion") = false,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = j,
         Rcpp::Named("flag") = convergence_flag

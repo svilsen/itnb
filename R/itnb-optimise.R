@@ -13,16 +13,17 @@ strip_terms <- function(formula) {
 #'
 #' @description Creates a list of default options.
 #'
-#' @param method String: indicating the method used to optimise the parameters (currently only accepts \code{method = 'em'}).
-#' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
+#' @param method String: The method used to optimise the parameters (currently only accepts \code{method = 'em'}).
+#' @param trace Numeric (>= 0): Showing a trace every \code{trace} number of iterations.
 #' @param tolerance Numeric (> 0): Convergence tolerance.
 #' @param lambda Numeric (> 0): Vector of penalisation constants (see details).
 #' @param iteration_min Numeric (>= 0): The minimum number of allowed iterations.
 #' @param iteration_max Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.
 #' @param steps Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.
-#' @param exact TRUE/FALSE: should parameter optimisation use the exact gradient, or finite difference?
-#' @param save_data TRUE/FALSE: should the data be stored in the return object?
-#' @param save_trace TRUE/FALSE: should the entire trace be stored in the return object?
+#' @param exact TRUE/FALSE: Should parameter optimisation use the exact gradient, or finite difference?
+#' @param overdispersion TRUE/FALSE: Should an overdispersion parameter be estimated?
+#' @param save_data TRUE/FALSE: Should the data be stored in the return object?
+#' @param save_trace TRUE/FALSE: Should the entire trace be stored in the return object?
 #'
 #' @details The vector of penalisation constants, \code{lambda}, can be set using one or two elements. If a single element is provided, the penalisation
 #' constant is fixed in every iteration of the EM-algorithm; however, if two elements are provided, the first is used as the initial penalisation constant, while
@@ -31,7 +32,7 @@ strip_terms <- function(formula) {
 #'
 #' @return A list of default arguments for the \link{itnb} function.
 #' @export
-itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, lambda = c(0.1, 0.001), iteration_min = 2, iteration_max = 100, steps = 100, exact = FALSE, save_data = TRUE, save_trace = TRUE) {
+itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, lambda = c(0.1, 0.001), iteration_min = 2, iteration_max = 100, steps = 100, exact = FALSE, overdispersion = TRUE, save_data = TRUE, save_trace = TRUE) {
     if (!is.character(method)) {
         stop("'method' has to be a string.")
     }
@@ -95,6 +96,11 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, lambda = c(
     }
 
     ##
+    if (!is.logical(overdispersion)) {
+        stop("'overdispersion' has to be logical.")
+    }
+
+    ##
     if (!is.logical(save_trace)) {
         stop("'save_trace' has to be logical.")
     }
@@ -108,7 +114,7 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, lambda = c(
     res <- list(
         method = method, trace = trace, tolerance = tolerance, lambda = lambda,
         iteration_max = iteration_max, iteration_min = iteration_min,
-        steps = steps, exact = exact,
+        steps = steps, exact = exact, overdispersion = overdispersion,
         save_data = save_data, save_trace = save_trace
     )
 
@@ -186,35 +192,73 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
     }
 
-    ##
-    if ((i < 0) | (i <= t)) {
-        control[["lambda"]] <- c(0, 0)
+    if (control[["overdispersion"]]) {
+        ##
+        if ((i < 0) | (i <= t)) {
+            control[["lambda"]] <- c(0, 0)
 
-        res <- mle_itnb_cpp(
-            X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
-            beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
-            i = i, t = t, link = link,
-            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
-            steps = control[["steps"]], exact = control[["exact"]],
-            trace = control[["trace"]]
-        )
+            res <- mle_tnb_cpp(
+                X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
+                i = i, t = t, link = link,
+                tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+                steps = control[["steps"]], exact = control[["exact"]],
+                trace = control[["trace"]]
+            )
 
-        res[["iterations"]] <- NA
-        res[["trace"]] <- NA
-    }
-    else if ((t < 0) | (i > t)) {
-        res <- em_itnb_cpp(
-            X = X, y = y, yi = yi,
-            beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
-            i = i, t = t, link = link,
-            iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
-            tolerance = control[["tolerance"]], lambda = control[["lambda"]],
-            steps = control[["steps"]], exact = control[["exact"]],
-            trace = control[["trace"]], save_trace = control[["save_trace"]]
-        )
+            res[["iterations"]] <- NA
+            res[["trace"]] <- NA
+        }
+        else if ((t < 0) | (i > t)) {
+            res <- em_itnb_cpp(
+                X = X, y = y, yi = yi,
+                beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
+                i = i, t = t, link = link,
+                iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+                tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+                steps = control[["steps"]], exact = control[["exact"]],
+                trace = control[["trace"]], save_trace = control[["save_trace"]]
+            )
+        }
+        else {
+            stop("How did we get here? Report with code 'itnb-opt-1'.")
+        }
     }
     else {
-        stop("How did we get here? Report with code 'itnb-opt-1'.")
+        alpha <- 0.0
+
+        ##
+        if ((i < 0) | (i <= t)) {
+            control[["lambda"]] <- c(0, 0)
+
+            res <- mle_tpois_cpp(
+                X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                beta_0 = beta, p_0 = p,
+                i = i, t = t, link = link,
+                tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+                steps = control[["steps"]], exact = control[["exact"]],
+                trace = control[["trace"]]
+            )
+
+            res[["iterations"]] <- NA
+            res[["trace"]] <- NA
+        }
+        else if ((t < 0) | (i > t)) {
+            res <- em_itpois_cpp(
+                X = X, y = y, yi = yi,
+                beta_0 = beta, p_0 = p,
+                i = i, t = t, link = link,
+                iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+                tolerance = control[["tolerance"]], lambda = control[["lambda"]],
+                steps = control[["steps"]], exact = control[["exact"]],
+                trace = control[["trace"]], save_trace = control[["save_trace"]]
+            )
+        }
+        else {
+            stop("How did we get here? Report with code 'itpois-opt-2'.")
+        }
+
+        res[["logtheta"]] <- NA
     }
 
     return(res)
@@ -283,7 +327,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     }
 
     #
-    if (control[["save_trace"]]) {
+    if (control[["save_trace"]] & !all(is.na(res[["trace"]]))) {
         #
         res[["trace"]] <- do.call("cbind", res[["trace"]]) |> as.data.frame()
         names(res[["trace"]])[grep("V", names(res[["trace"]]))] <- colnames(X)

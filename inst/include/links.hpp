@@ -1,5 +1,5 @@
-#ifndef link_functions
-#define link_functions
+#ifndef links
+#define links
 
 #include <RcppArmadillo.h>
 
@@ -36,4 +36,4 @@ private:
 //     double link_inv_dev(const double & mu, const arma::vec & x, const int & m);
 // };
 
-#endif //link_functions
+#endif //links

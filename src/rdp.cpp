@@ -104,12 +104,12 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
 double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
     //
     const double tm = theta + mu;
-    double log_d = x * std::log(mu) - std::lgamma(x + 1);
-    if (std::isinf(theta)) {
-        log_d += (-mu);
+    double log_d;
+    if (std::isinf(theta) || (theta > 1e16)) {
+        log_d = x * std::log(mu) - std::lgamma(x + 1) - mu;
     }
     else{
-        log_d += theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
+        log_d = x * std::log(mu) - std::lgamma(x + 1) + theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
     }
 
     //
@@ -120,8 +120,8 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
         else {
             //
             double pb = 0.0;
-            if (std::isinf(theta)) {
-                pb = R::ppois(t, mu, false, true);
+            if (std::isinf(theta) || (theta > 1e16)) {
+                pb = 1.0 - R::ppois(t, mu, true, true);
             }
             else {
                 pb = R::pbeta(mu / tm, t + 1, theta, true, true);

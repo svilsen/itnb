@@ -1,8 +1,10 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include "rdp_functions.hpp"
-#include "link_functions.hpp"
+#include "rdp.hpp"
+#include "links.hpp"
+
+const double e = 2.0 * std::numeric_limits<double>::epsilon();
 
 //// Log-likelihood
 double loglikelihood(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
@@ -59,6 +61,38 @@ double beta_derivative_boole(const double & a, const double & b, const double & 
     //
     const double scale_x = (2.0 / 45.0) * delta_x;
     return scale_x * i;
+}
+
+//// EM-steps
+// Expectation
+void update_z(arma::vec & z, const arma::mat & X, const arma::vec & y, const arma::vec & yi, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
+    //
+    for (int n = 0; n < N; n++) {
+        //
+        const arma::rowvec & x_n = X.row(n);
+        const arma::vec eta_n = x_n * beta;
+        const double & mu_n = LO.link_inv(eta_n[0]);
+
+        //
+        double d_n = std::exp(ditnb_cpp(y[n], mu_n, theta, 0.0, i, t));
+        z[n] = (p * yi[n]) / (p * yi[n] + (1.0 - p) * d_n);
+    }
+}
+
+// Maximisation
+void update_p(double & p, const arma::vec & yi, const arma::vec & z, const int & N) {
+    double num = 0.0;
+    double denom = 0.0;
+    for (int n = 0; n < N; n++) {
+        num += (z[n] * yi[n]);
+        denom += (1.0 + z[n] * (yi[n] - 1.0));
+    }
+
+    p = num / denom;
+
+    if (p < e) {
+        p = e;
+    }
 }
 
 

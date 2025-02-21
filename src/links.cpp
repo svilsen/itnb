@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-#include "link_functions.hpp"
+#include "links.hpp"
 
 //
 Link::Link(const std::string & s_) : s(s_) { }
