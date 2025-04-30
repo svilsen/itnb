@@ -39,7 +39,7 @@ public:
                 g = e * e;
             }
 
-            const double d_n = ditnb_cpp(y[n], mu_n, HUGE_VAL, 0.0, i, t);
+            const double d_n = ditpois_cpp(y[n], mu_n, 0.0, i, t);
 
             d -= d_n;
             penalisation += lambda * g;
@@ -171,7 +171,7 @@ void optimise_tpois(
     beta_j = pars_j;
 
     //
-    loglike_j = loglikelihood(X, y, beta_j, HUGE_VAL, p_0, i, t, N, LO);
+    loglike_j = loglike_pois(X, y, beta_j, p_0, i, t, N, LO);
     r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 
@@ -214,6 +214,9 @@ Rcpp::List mle_tpois_cpp(
         steps, exact, trace
     );
 
+    // HOT FIX
+    approx_hessian += 1e-8 * arma::eye(beta_j.size(), beta_j.size());
+
     //
     arma::mat vcov = arma::inv(approx_hessian);
 
@@ -231,7 +234,6 @@ Rcpp::List mle_tpois_cpp(
         Rcpp::Named("vcov") = vcov,
         Rcpp::Named("logtheta") = 0,
         Rcpp::Named("trace") = 0,
-        Rcpp::Named("overdispersion") = false,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = 0,
         Rcpp::Named("flag") = convergence_flag

@@ -1,6 +1,9 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
+//// Upper bound on the size parameter
+const double UBND = 2.0 * 1e+12;
+
 //// ritnb function
 // Generate random variates from a truncated poisson and negative binomial distribution
 int rtpoisson_cpp(const double & mu, const int & t) {
@@ -75,8 +78,9 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
             val = i_n;
         }
         else {
+            const bool is_poisson = std::isinf(theta_n) || std::isnan(theta_n) || (theta_n > UBND);
             if (t_n > -1) {
-                if (std::isinf(theta_n)) {
+                if (is_poisson) {
                     val = rtpoisson_cpp(mu_n, t_n);
                 }
                 else {
@@ -84,7 +88,7 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
                 }
             }
             else {
-                if (std::isinf(theta_n)) {
+                if (is_poisson) {
                     val = R::rpois(mu_n);
                 }
                 else {
@@ -100,17 +104,10 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
     return x;
 }
 
-//// ditnb function
-double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
+//// ditpois function
+double ditpois_cpp(const int & x, const double & mu, const double & p, const int & i, const int & t) {
     //
-    const double tm = theta + mu;
-    double log_d;
-    if (std::isinf(theta) || (theta > 1e16)) {
-        log_d = x * std::log(mu) - std::lgamma(x + 1) - mu;
-    }
-    else{
-        log_d = x * std::log(mu) - std::lgamma(x + 1) + theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
-    }
+    double log_d = x * std::log(mu) - std::lgamma(x + 1) - mu;
 
     //
     if (t > -1) {
@@ -119,12 +116,45 @@ double ditnb_cpp(const int & x, const double & mu, const double & theta, const d
         }
         else {
             //
-            double pb = 0.0;
-            if (std::isinf(theta) || (theta > 1e16)) {
-                pb = 1.0 - R::ppois(t, mu, true, true);
+            const double pb = R::ppois(t, mu, 0, 1);
+            log_d = log_d - pb;
+        }
+    }
+
+    //
+    if (i > -1) {
+        if (p > 2e-16) {
+            log_d = std::log(1.0 - p) + log_d;
+
+            if (x == i) {
+                log_d = std::log1p(p + std::expm1(log_d));
             }
-            else {
-                pb = R::pbeta(mu / tm, t + 1, theta, true, true);
+        }
+    }
+
+    //
+    return log_d;
+}
+
+//// ditnb function
+double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
+    //
+    const double tm = theta + mu;
+
+    //
+    double log_d = x * std::log(mu) - std::lgamma(x + 1) + theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
+
+    //
+    if (t > -1) {
+        if (x <= t) {
+            log_d = -HUGE_VAL;
+        }
+        else {
+            //
+            const double pb = R::pnbinom(t, theta, theta / tm, 0, 1); // R::pbeta(mu / tm, t + 1, theta, 0, 1);
+
+            if (std::isnan(theta)) {
+                Rcpp::Rcout << x << " " << mu << " " << p << " " << t << " " << theta << " " << tm << " " << theta / tm << " " << pb << "\n";
             }
 
             log_d = log_d - pb;
@@ -166,6 +196,8 @@ arma::vec ditnb_cpp(const arma::vec & x, const arma::vec & mu, const arma::vec &
     const int & N_t = t.size();
     int t_n = t[0];
 
+    const bool is_poisson = std::isinf(theta_n) || std::isnan(theta_n) || (theta_n > UBND);
+
     //
     arma::vec d(N_x);
     for (int n = 0; n < N_x; n++) {
@@ -185,7 +217,12 @@ arma::vec ditnb_cpp(const arma::vec & x, const arma::vec & mu, const arma::vec &
             t_n = t[n];
         }
 
-        d[n] = ditnb_cpp(x[n], mu_n, theta_n, p_n, i_n, t_n);
+        if (is_poisson) {
+            d[n] = ditpois_cpp(x[n], mu_n, p_n, i_n, t_n);
+        }
+        else {
+            d[n] = ditnb_cpp(x[n], mu_n, theta_n, p_n, i_n, t_n);
+        }
     }
 
     return d;

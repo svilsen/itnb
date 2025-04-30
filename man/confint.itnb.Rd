@@ -4,14 +4,7 @@
 \alias{confint.itnb}
 \title{Confidence intervals of itnb-object.}
 \usage{
-\method{confint}{itnb}(
-  object,
-  level = 0.95,
-  B = 200,
-  parametric = FALSE,
-  trace = 0,
-  control = list()
-)
+\method{confint}{itnb}(object, level = 0.95, B = 200, parametric = FALSE, trace = 0)
 }
 \arguments{
 \item{object}{An \link{itnb-object}.}
@@ -23,8 +16,6 @@
 \item{parametric}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
 
 \item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
-
-\item{control}{List: A control object, see \link{itnb_control} for details, passed to the \link{itnb} function.}
 }
 \value{
 If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.

@@ -41,7 +41,7 @@ public:
                 g = r * r;
             }
 
-            d += (z[n] - 1.0) * ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
+            d -= (1.0 - z[n]) * ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
             penalisation += lambda * g;
 
         }
@@ -161,8 +161,8 @@ void optimise_itnb(
     Link LO(link);
 
     //
-    arma::vec z(N);
-    update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO);
+    arma::vec z = arma::zeros(N);
+    update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO, false);
 
     //
     arma::vec pars_j = arma::vec(M + 1);
@@ -176,7 +176,7 @@ void optimise_itnb(
     EM r_log_likelihood(X, y, yi, z, i, t, steps, exact, lambda[0] / lambda[1], LO);
 
     //
-    loglike_j = loglikelihood(X, y, beta_j, theta_j, p_j, i, t, N, LO);
+    loglike_j = loglike_nb(X, y, beta_j, theta_j, p_j, i, t, N, LO);
     double loglike_j_old = HUGE_VAL;
     double delta_loglike_j = loglike_j - loglike_j_old;
 
@@ -196,7 +196,7 @@ void optimise_itnb(
         pars_j_old[M] = std::log(theta_j);
 
         //// E-step
-        update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO);
+        update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO, false);
 
         //// M-step
         // Inflation proportion
@@ -214,7 +214,7 @@ void optimise_itnb(
 
         //// Convergence
         loglike_j_old = loglike_j;
-        loglike_j = loglikelihood(X, y, beta_j, theta_j, p_j, i, t, N, LO);
+        loglike_j = loglike_nb(X, y, beta_j, theta_j, p_j, i, t, N, LO);
         delta_loglike_j = loglike_j - loglike_j_old;
 
         if (delta_loglike_j < 0.0) {
@@ -229,7 +229,6 @@ void optimise_itnb(
         }
         else if (j > iteration_min) {
             if (j < iteration_max) {
-
                 if (std::abs(delta_loglike_j) < tolerance) {
                     not_converged = false;
                 }
@@ -336,6 +335,9 @@ Rcpp::List em_itnb_cpp(
         );
     }
 
+    // HOT FIX
+    approx_hessian += 1e-8 * arma::eye(beta_j.size() + 1, beta_j.size() + 1);
+
     //
     arma::mat vcov = arma::inv(approx_hessian);
     double se_logtheta = std::sqrt(vcov(beta_j.size(), beta_j.size()));
@@ -357,7 +359,6 @@ Rcpp::List em_itnb_cpp(
         Rcpp::Named("vcov") = vcov,
         Rcpp::Named("logtheta") = se_logtheta,
         Rcpp::Named("trace") = trace_list,
-        Rcpp::Named("overdispersion") = false,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = j,
         Rcpp::Named("flag") = convergence_flag

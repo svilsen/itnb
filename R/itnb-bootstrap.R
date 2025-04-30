@@ -7,13 +7,12 @@
 #' @param B Numeric: The number of simulations used to create the confidence envelopes.
 #' @param parametric TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
-#' @param control List: A control object, see \link{itnb_control} for details, passed to the \link{itnb} function.
 #'
 #' @example inst/examples/simulation_itnb_example.R
 #'
 #' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 #' @export
-confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trace = 0, control = list()) {
+confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trace = 0) {
     ##
     if (all(is.na(object[["data"]]))) {
         stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
@@ -65,6 +64,10 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
     beta <- object[["beta"]]
     alpha <- object[["alpha"]]
     p <- object[["p"]]
+
+    control <- object[["control"]]
+    control[["trace"]] <- 0
+    control[["save_data"]] <- FALSE
 
     if (parametric) {
         mu <- X %*% beta

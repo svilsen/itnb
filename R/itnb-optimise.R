@@ -152,7 +152,8 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
     if (!is.numeric(i)) {
         stop("'i' has to be numeric.")
     }
-    else if (length(i) != 1) {
+
+    if (length(i) != 1) {
         warning("'i' needs to have length 1, only the first element is used.")
         i <- i[1]
     }
@@ -166,13 +167,14 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
     if (!is.numeric(t)) {
         stop("'t' has to be numeric.")
     }
-    else if (length(t) != 1) {
+
+    if (length(t) != 1) {
         warning("'t' needs to have length 1, only the first element is used.")
         t <- t[1]
     }
     t <- ceiling(t)
 
-    ## Initial parameters
+    ##
     yi <- as.numeric(y == i)
     p <- mean(yi, na.rm = TRUE)
 
@@ -192,6 +194,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
     }
 
+    ##
     if (control[["overdispersion"]]) {
         ##
         if ((i < 0) | (i <= t)) {
@@ -221,7 +224,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             )
         }
         else {
-            stop("How did we get here? Report with code 'itnb-opt-1'.")
+            stop("How did we get here? Report with code 'itnb-opt'.")
         }
     }
     else {
@@ -255,12 +258,13 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             )
         }
         else {
-            stop("How did we get here? Report with code 'itpois-opt-2'.")
+            stop("How did we get here? Report with code 'itpois-opt'.")
         }
 
         res[["logtheta"]] <- NA
     }
 
+    res[["control"]] <- control
     return(res)
 }
 
@@ -301,7 +305,12 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     ##
     if ((is.null(i) | (i < 0)) & (is.null(t) | (t < 0))) {
         ##
-        warning("When both 'i' and 't' are 'NULL' the problem reduces to a regular negative binomial regression; see the 'glm.nb' function from the 'MASS' package.")
+        if (control[["overdispersion"]]) {
+            warning("When both 'i' and 't' are 'NULL' the problem reduces to a regular negative binomial regression, see the 'glm.nb' function from the 'MASS' package.")
+        }
+        else {
+            warning("When both 'i' and 't' are 'NULL' the problem reduces to a regular Poisson regression, see the 'glm' function.")
+        }
     }
 
     ##
@@ -590,12 +599,6 @@ summary.itnb <- function(object, ...) {
     }
 
     ##
-    control <- dots[["control"]]
-    if (is.null(control)) {
-        control <- list()
-    }
-
-    ##
     r <- residuals(object, type = type)
     f <- fitted.values(object)
 
@@ -603,7 +606,7 @@ summary.itnb <- function(object, ...) {
     se <- sqrt(diag(object[["vcov"]]))
 
     if (bootstrap) {
-        ci <- confint.itnb(object, level = NULL, B = B, parametric = parametric, trace = trace, control = control)
+        ci <- confint.itnb(object, level = NULL, B = B, parametric = parametric, trace = trace)
 
         ##
         betas <- lapply(
@@ -613,20 +616,20 @@ summary.itnb <- function(object, ...) {
                 se_j <- se[j]
 
                 beta_j <- ci[["ci"]][["beta"]][, j]
-                se_beta_j <- sd(beta_j)
+                se_beta_j <- sd(beta_j, na.rm = TRUE)
 
-                z_obs_j <- b_j / se_j
+                z_obs_j <- b_j / se_beta_j # se_j
                 z_boot_j <- (beta_j - b_j) / se_beta_j
 
-                p_lower_j <- (sum(abs(z_obs_j) < abs(z_boot_j)) + 1) / (length(beta_j) + 1)
-                p_upper_j <- (sum(abs(z_obs_j) >= abs(z_boot_j)) + 1) / (length(beta_j) + 1)
+                p_lower_j <- (sum(abs(z_obs_j) < abs(z_boot_j), na.rm = TRUE) + 1) / (length(beta_j) + 1)
+                p_upper_j <- (sum(abs(z_obs_j) >= abs(z_boot_j), na.rm = TRUE) + 1) / (length(beta_j) + 1)
                 p_j <- 2.0 * min(p_lower_j, p_upper_j)
 
                 c(
-                    b_j,
-                    se_j,
-                    quantile(beta_j, probs = c(sig_level, 1 - sig_level)),
-                    mean(beta_j) / se_beta_j,
+                    mean(beta_j, na.rm = TRUE),
+                    se_beta_j,
+                    quantile(beta_j, probs = c(sig_level, 1 - sig_level), na.rm = TRUE),
+                    mean(beta_j, na.rm = TRUE) / se_beta_j,
                     p_j
                 )
 
@@ -637,17 +640,22 @@ summary.itnb <- function(object, ...) {
                 c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")), "t-value", "Pr(>|t|)")
             ))
 
-        alpha <- ci[["ci"]][["alpha"]] |>
-            (\(z) c(
-                mean(z),
-                sd(z),
-                quantile(z, probs = c(sig_level, 1 - sig_level))
-            ))() |>
-            matrix(nrow = 1) |>
-            structure(.Dimnames = list(
-                paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
-                c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
-            ))
+        if (object[["control"]][["overdispersion"]]) {
+            alpha <- ci[["ci"]][["alpha"]] |>
+                (\(z) c(
+                    mean(z),
+                    sd(z),
+                    quantile(z, probs = c(sig_level, 1 - sig_level))
+                ))() |>
+                matrix(nrow = 1) |>
+                structure(.Dimnames = list(
+                    paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
+                    c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
+                ))
+        }
+        else {
+            alpha <- matrix(nrow = 0, ncol = 0)
+        }
 
         p <- ci[["ci"]][["p"]] |>
             (\(z) c(
@@ -666,8 +674,8 @@ summary.itnb <- function(object, ...) {
         betas <- cbind(
             coefs[["beta"]],
             se,
-            sqrt(coefs[["beta"]] / se),
-            pnorm(sqrt(coefs[["beta"]] / se), lower.tail = FALSE)
+            sqrt((coefs[["beta"]] / se)^2),
+            pnorm(sqrt((coefs[["beta"]] / se)^2), lower.tail = FALSE)
         ) |>
             structure(
                 .Dimnames = list(
@@ -731,10 +739,10 @@ print.summary.itnb <- function(x, ...) {
     cat("Link:\n", x[["link"]], "\n")
     cat("\n")
 
-    cat("Inflation point:", x[["i"]], "\n")
+    cat("Inflation point:", ifelse(x[["i"]] < 0, NA, x[["i"]]), "\n")
     cat("\n")
 
-    cat("Trunctation point:", x[["t"]], "\n")
+    cat("Trunctation point:", ifelse(x[["t"]] < 0, NA, x[["t"]]), "\n")
     cat("\n")
 
     ##
@@ -753,19 +761,23 @@ print.summary.itnb <- function(x, ...) {
     cat("\n")
 
     #
-    cat("Inflation coefficients:\n")
-    printCoefmat(x[["inflation"]], ...)
-    cat("\n")
+    if (x[["i"]] > 0) {
+        cat("Inflation coefficients:\n")
+        printCoefmat(x[["inflation"]], ...)
+        cat("\n")
+    }
 
     #
-    if (!all(is.na(x[["bootstrap"]]))) {
-        cat("Overdispersion:\n")
+    if (nrow(x[["overdispersion"]]) > 0) {
+        if (!all(is.na(x[["bootstrap"]]))) {
+            cat("Overdispersion:\n")
+        }
+        else {
+            cat("Overdispersion (shown for log(1 / alpha)):\n")
+        }
+        print(x[["overdispersion"]], ...)
+        cat("\n")
     }
-    else {
-        cat("Overdispersion (shown for log(1 / alpha)):\n")
-    }
-    print(x[["overdispersion"]], ...)
-    cat("\n")
 
     ##
     if (!all(is.na(x[["bootstrap"]]))) {
@@ -795,7 +807,22 @@ coef.itnb <- function(object, ...) {
     dots <- list(...)
 
     if (is.null(dots[["par"]])) {
-        r <- object[c("beta", "alpha", "p")]
+        if (object[["control"]][["overdispersion"]]) {
+            if (object$i > 0) {
+                r <- object[c("beta", "alpha", "p")]
+            }
+            else {
+                r <- object[c("beta", "alpha")]
+            }
+        }
+        else {
+            if (object$i > 0) {
+                r <- object[c("beta", "p")]
+            }
+            else {
+                r <- object[c("beta")]
+            }
+        }
     }
     else if (dots[["par"]] == "beta") {
         r <- object[["beta"]]

@@ -7,7 +7,21 @@
 const double e = 2.0 * std::numeric_limits<double>::epsilon();
 
 //// Log-likelihood
-double loglikelihood(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
+double loglike_pois(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
+    //
+    double d = 0.0;
+    for (int n = 0; n < N; n++) {
+        const arma::rowvec & x_n = X.row(n);
+        const arma::vec eta_n = x_n * beta;
+        const double & mu_n = LO.link_inv(eta_n[0]);
+
+        d += ditpois_cpp(y[n], mu_n, p, i, t);
+    }
+
+    return d;
+}
+
+double loglike_nb(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
     //
     double d = 0.0;
     for (int n = 0; n < N; n++) {
@@ -65,17 +79,26 @@ double beta_derivative_boole(const double & a, const double & b, const double & 
 
 //// EM-steps
 // Expectation
-void update_z(arma::vec & z, const arma::mat & X, const arma::vec & y, const arma::vec & yi, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO) {
+void update_z(arma::vec & z, const arma::mat & X, const arma::vec & y, const arma::vec & yi, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, const int & N, Link & LO, const bool & is_poisson) {
     //
     for (int n = 0; n < N; n++) {
         //
-        const arma::rowvec & x_n = X.row(n);
-        const arma::vec eta_n = x_n * beta;
-        const double & mu_n = LO.link_inv(eta_n[0]);
+        if (yi[n] > 0) {
+            const arma::rowvec & x_n = X.row(n);
+            const arma::vec eta_n = x_n * beta;
+            const double & mu_n = LO.link_inv(eta_n[0]);
 
-        //
-        double d_n = std::exp(ditnb_cpp(y[n], mu_n, theta, 0.0, i, t));
-        z[n] = (p * yi[n]) / (p * yi[n] + (1.0 - p) * d_n);
+            //
+            double d_n;
+            if (is_poisson) {
+                d_n = std::exp(ditpois_cpp(y[n], mu_n, 0.0, i, t));
+            }
+            else {
+                d_n = std::exp(ditnb_cpp(y[n], mu_n, theta, 0.0, i, t));
+            }
+
+            z[n] = (p * yi[n]) / (p * yi[n] + (1.0 - p) * d_n);
+        }
     }
 }
 

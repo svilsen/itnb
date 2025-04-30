@@ -40,7 +40,7 @@ public:
                 g = r * r;
             }
 
-            d += (z[n] - 1.0) * ditnb_cpp(y[n], mu_n, HUGE_VAL, 0.0, i, t);
+            d -= (1.0 - z[n]) * ditpois_cpp(y[n], mu_n, 0.0, i, t);
             penalisation += lambda * g;
 
         }
@@ -159,8 +159,8 @@ void optimise_itpois(
     Link LO(link);
 
     //
-    arma::vec z(N);
-    update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO);
+    arma::vec z = arma::zeros(N);
+    update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO, true);
 
     //
     arma::vec pars_j = arma::vec(M);
@@ -173,13 +173,13 @@ void optimise_itpois(
     EM r_log_likelihood(X, y, yi, z, i, t, steps, exact, lambda[0] / lambda[1], LO);
 
     //
-    loglike_j = loglikelihood(X, y, beta_j, HUGE_VAL, p_j, i, t, N, LO);
+    loglike_j = loglike_pois(X, y, beta_j, p_j, i, t, N, LO);
     double loglike_j_old = HUGE_VAL;
     double delta_loglike_j = loglike_j - loglike_j_old;
 
     if (trace > 0) {
         Rcpp::Rcout << "Iteration: " << j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << delta_loglike_j << "\n"
-                    << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 1.0 / HUGE_VAL << "\t p = " << p_j << "\n";
+                    << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 0.0 << "\t p = " << p_j << "\n";
     }
 
     //
@@ -191,7 +191,7 @@ void optimise_itpois(
         pars_j_old = beta_j;
 
         //// E-step
-        update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO);
+        update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO, true);
 
         //// M-step
         // Inflation proportion
@@ -207,7 +207,7 @@ void optimise_itpois(
 
         //// Convergence
         loglike_j_old = loglike_j;
-        loglike_j = loglikelihood(X, y, beta_j, HUGE_VAL, p_j, i, t, N, LO);
+        loglike_j = loglike_pois(X, y, beta_j, p_j, i, t, N, LO);
         delta_loglike_j = loglike_j - loglike_j_old;
 
         if (delta_loglike_j < 0.0) {
@@ -221,7 +221,6 @@ void optimise_itpois(
         }
         else if (j > iteration_min) {
             if (j < iteration_max) {
-
                 if (std::abs(delta_loglike_j) < tolerance) {
                     not_converged = false;
                 }
@@ -272,7 +271,7 @@ Rcpp::List em_itpois_cpp(
     //
     int j = 0;
     bool not_converged;
-    std::string convergence_flag;
+    std::string convergence_flag = "";
 
     //
     double p_j = p_0;
@@ -327,6 +326,9 @@ Rcpp::List em_itpois_cpp(
         );
     }
 
+    // HOT FIX
+    approx_hessian += 1e-8 * arma::eye(beta_j.size(), beta_j.size());
+
     //
     arma::mat vcov = arma::inv(approx_hessian);
 
@@ -344,7 +346,6 @@ Rcpp::List em_itpois_cpp(
         Rcpp::Named("vcov") = vcov,
         Rcpp::Named("logtheta") = 0,
         Rcpp::Named("trace") = trace_list,
-        Rcpp::Named("overdispersion") = false,
         Rcpp::Named("converged") = !not_converged,
         Rcpp::Named("iterations") = j,
         Rcpp::Named("flag") = convergence_flag
