@@ -3,6 +3,7 @@
 
 #include "rdp.hpp"
 #include "links.hpp"
+#include "aux_functions.hpp"
 
 const double e = 2.0 * std::numeric_limits<double>::epsilon();
 

@@ -6,7 +6,7 @@
 
 #include "rdp.hpp"
 #include "links.hpp"
-#include "aux.hpp"
+#include "aux_functions.hpp"
 
 using namespace roptim;
 
