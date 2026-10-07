@@ -9,5 +9,5 @@ License: MIT + file LICENSE
 Imports: Rcpp (>= 1.0.4.6), stats, graphics
 LinkingTo: Rcpp, RcppArmadillo, roptim
 Encoding: UTF-8
-RoxygenNote: 7.3.2
 Depends: R (>= 4.1.0)
+Config/roxygen2/version: 8.1.0

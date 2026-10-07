@@ -162,7 +162,7 @@ void optimise_itnb(
 
     //
     arma::vec z = arma::zeros(N);
-    update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO, false);
+    update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO);
 
     //
     arma::vec pars_j = arma::vec(M + 1);
