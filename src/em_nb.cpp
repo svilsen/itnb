@@ -176,7 +176,7 @@ void optimise_itnb(
     EM r_log_likelihood(X, y, yi, z, i, t, steps, exact, lambda[0] / lambda[1], LO);
 
     //
-    loglike_j = loglike_nb(X, y, beta_j, theta_j, p_j, i, t, N, LO);
+    loglike_j = opt.value();
     double loglike_j_old = HUGE_VAL;
     double delta_loglike_j = loglike_j - loglike_j_old;
 
@@ -196,7 +196,7 @@ void optimise_itnb(
         pars_j_old[M] = std::log(theta_j);
 
         //// E-step
-        update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO, false);
+        update_z(z, X, y, yi, beta_j, theta_j, p_j, i, t, N, LO);
 
         //// M-step
         // Inflation proportion
@@ -214,7 +214,7 @@ void optimise_itnb(
 
         //// Convergence
         loglike_j_old = loglike_j;
-        loglike_j = loglike_nb(X, y, beta_j, theta_j, p_j, i, t, N, LO);
+        loglike_j = opt.value();
         delta_loglike_j = loglike_j - loglike_j_old;
 
         if (delta_loglike_j < 0.0) {

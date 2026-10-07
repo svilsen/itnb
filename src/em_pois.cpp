@@ -57,56 +57,56 @@ public:
         //
         gr = arma::zeros(M);
         if (exact) {
-            const arma::vec & beta = par;
-
-            for (int n = 0; n < N; n++) {
-                //
-                const arma::rowvec & x_n = X.row(n);
-                const arma::vec eta_n = x_n * beta;
-
-                const double mu_n = LO.link_inv(eta_n[0]);
-
-                //
-                const double & mu_theta = mu_n + theta;
-                const double & mu_theta_i = 1.0 / mu_theta;
-
-                const double & y_theta = y[n] + theta;
-
-                //
-                double gr_beta = (z[n] - 1.0) * (y[n] / mu_n - y_theta * mu_theta_i);
-                double gr_theta = (z[n] - 1.0) * (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
-                if (t > -1) {
-                    const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
-
-                    // Location
-                    const double & b_mu_n = std::pow(mu_n, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
-                    const double & I_mu = b_mu_n / b;
-
-                    gr_beta += (z[n] - 1.0) * (-I_mu);
-
-                    // Overdispersion
-                    const double & b_t_f = std::pow(mu_n, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
-                    const double & b_t_i = beta_derivative_rectangle(0.0, mu_n * mu_theta_i, theta, t, steps);
-                    const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
-
-                    const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
-                    gr_theta += (z[n] - 1.0) * (-I_theta);
-                }
-
-                //
-                for (int m = 0; m < M; m++) {
-                    double gr_g = 0.0;
-                    if (mu_n < (t + 1)) {
-                        gr_g = 2.0 * (mu_n - (t + 1));
-                    }
-
-                    const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
-                    gr[m] += (gr_beta + lambda * gr_g) * gr_mu;
-                }
-
-                //
-                gr[M] += gr_theta * theta;
-            }
+            // const arma::vec & beta = par;
+            //
+            // for (int n = 0; n < N; n++) {
+            //     //
+            //     const arma::rowvec & x_n = X.row(n);
+            //     const arma::vec eta_n = x_n * beta;
+            //
+            //     const double mu_n = LO.link_inv(eta_n[0]);
+            //
+            //     //
+            //     const double & mu_theta = mu_n + theta;
+            //     const double & mu_theta_i = 1.0 / mu_theta;
+            //
+            //     const double & y_theta = y[n] + theta;
+            //
+            //     //
+            //     double gr_beta = (z[n] - 1.0) * (y[n] / mu_n - y_theta * mu_theta_i);
+            //     double gr_theta = (z[n] - 1.0) * (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
+            //     if (t > -1) {
+            //         const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
+            //
+            //         // Location
+            //         const double & b_mu_n = std::pow(mu_n, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
+            //         const double & I_mu = b_mu_n / b;
+            //
+            //         gr_beta += (z[n] - 1.0) * (-I_mu);
+            //
+            //         // Overdispersion
+            //         const double & b_t_f = std::pow(mu_n, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
+            //         const double & b_t_i = beta_derivative_rectangle(0.0, mu_n * mu_theta_i, theta, t, steps);
+            //         const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
+            //
+            //         const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
+            //         gr_theta += (z[n] - 1.0) * (-I_theta);
+            //     }
+            //
+            //     //
+            //     for (int m = 0; m < M; m++) {
+            //         double gr_g = 0.0;
+            //         if (mu_n < (t + 1)) {
+            //             gr_g = 2.0 * (mu_n - (t + 1));
+            //         }
+            //
+            //         const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
+            //         gr[m] += (gr_beta + lambda * gr_g) * gr_mu;
+            //     }
+            //
+            //     //
+            //     gr[M] += gr_theta * theta;
+            // }
         }
         else{
             ApproximateGradient(par, gr);
@@ -160,7 +160,7 @@ void optimise_itpois(
 
     //
     arma::vec z = arma::zeros(N);
-    update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO, true);
+    update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO);
 
     //
     arma::vec pars_j = arma::vec(M);
@@ -173,7 +173,7 @@ void optimise_itpois(
     EM r_log_likelihood(X, y, yi, z, i, t, steps, exact, lambda[0] / lambda[1], LO);
 
     //
-    loglike_j = loglike_pois(X, y, beta_j, p_j, i, t, N, LO);
+    loglike_j = opt.value();
     double loglike_j_old = HUGE_VAL;
     double delta_loglike_j = loglike_j - loglike_j_old;
 
@@ -191,7 +191,7 @@ void optimise_itpois(
         pars_j_old = beta_j;
 
         //// E-step
-        update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO, true);
+        update_z(z, X, y, yi, beta_j, HUGE_VAL, p_j, i, t, N, LO);
 
         //// M-step
         // Inflation proportion
@@ -207,7 +207,7 @@ void optimise_itpois(
 
         //// Convergence
         loglike_j_old = loglike_j;
-        loglike_j = loglike_pois(X, y, beta_j, p_j, i, t, N, LO);
+        loglike_j = opt.value();
         delta_loglike_j = loglike_j - loglike_j_old;
 
         if (delta_loglike_j < 0.0) {

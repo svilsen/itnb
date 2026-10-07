@@ -175,7 +175,7 @@ void optimise_tnb(
     theta_j = std::exp(pars_j[M]);
 
     //
-    loglike_j = loglike_nb(X, y, beta_j, theta_j, p_0, i, t, N, LO);
+    loglike_j = opt.value();
     r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 

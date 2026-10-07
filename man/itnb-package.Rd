@@ -10,6 +10,11 @@ An inflated and truncated negative binomial regression model, with parameter est
 \author{
 \strong{Maintainer}: Søren B. Vilsen \email{svilsen@math.aau.dk}
 
+Authors:
+\itemize{
+  \item Søren B. Vilsen \email{svilsen@math.aau.dk}
+}
+
 
 Søren B. Vilsen <svilsen@math.aau.dk>
 }
