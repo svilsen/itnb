@@ -39,6 +39,7 @@ m <- itnb(
 )
 
 summary(m)
+lrtest(m, type = "overdispersion")
 ```
 
 ## License

@@ -115,9 +115,9 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
     if (!is.null(level)) {
         sig_level <- (1 - level) / 2
         ci_list <- list(
-            "beta" = ci_list[["beta"]] |> apply(2, quantile, probs = c(sig_level, 1 - sig_level)) |> t(),
-            "alpha" = quantile(ci_list[["alpha"]], probs = c(sig_level, 1 - sig_level)),
-            "p" = quantile(ci_list[["p"]], probs = c(sig_level, 1 - sig_level))
+            "beta" = ci_list[["beta"]] |> apply(2, quantile, probs = c(sig_level, 1 - sig_level), na.rm = TRUE) |> t(),
+            "alpha" = quantile(ci_list[["alpha"]], probs = c(sig_level, 1 - sig_level), na.rm = TRUE),
+            "p" = quantile(ci_list[["p"]], probs = c(sig_level, 1 - sig_level), na.rm = TRUE)
         )
     }
 
@@ -176,8 +176,9 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     ##
     loglike_o <- object[["loglikelihood"]]
     if (type %in% c("o", "overdispersion")) {
-        type <- "overdisperion"
+        type <- "overdispersion"
         df <- 1
+        control[["overdispersion"]] <- FALSE
 
         poisson_m <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
         loglike_s <- poisson_m[["loglikelihood"]]
@@ -192,6 +193,7 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     else if (type %in% c("b", "both")) {
         type <- "both"
         df <- 2
+        control[["overdispersion"]] <- FALSE
 
         poisson_without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
         loglike_s <- poisson_without_inflation[["loglikelihood"]]
@@ -200,10 +202,10 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
         stop("'type' only takes the values 'overdispersion', 'inflation', or 'both'.")
     }
 
-    d <- 2.0 * (loglike_o - loglike_s)
+    d <- 2.0 * (loglike_s - loglike_o)
 
-    crit_val <- qchisq(1.0 - 2.0 * level, df = df)
-    p_val <- pchisq(d, df = df, lower.tail = FALSE) / 2
+    crit_val <- qchisq(1.0 - level / 2, df = df)
+    p_val <- pchisq(d, df = df, lower.tail = FALSE)
 
     res <- list(
         lr = d,

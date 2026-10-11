@@ -2,10 +2,10 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 //// Upper bound on the size parameter
-const double UBND = 2.0 * 1e+12;
+const double UBND = 2.0 * 1e+16;
 
 //// ritnb function
-// Generate random variates from a truncated poisson and negative binomial distribution
+//
 int rtpoisson_cpp(const double & mu, const int & t) {
     //
     int x = t;
@@ -17,6 +17,7 @@ int rtpoisson_cpp(const double & mu, const int & t) {
     return x;
 }
 
+//
 int rtnbinom_cpp(const double & mu, const double & theta, const int & t) {
     //
     int x = t;
@@ -105,6 +106,7 @@ arma::vec ritnb_cpp(const int & n, const arma::vec & mu, const arma::vec & theta
 }
 
 //// ditpois function
+//
 double ditpois_cpp(const int & x, const double & mu, const double & p, const int & i, const int & t) {
     //
     double log_d = x * std::log(mu) - std::lgamma(x + 1) - mu;
@@ -137,37 +139,44 @@ double ditpois_cpp(const int & x, const double & mu, const double & p, const int
 }
 
 //// ditnb function
+//
 double ditnb_cpp(const int & x, const double & mu, const double & theta, const double & p, const int & i, const int & t) {
     //
-    const double tm = theta + mu;
+    const bool is_poisson = std::isinf(theta) || std::isnan(theta) || (theta > UBND);
 
     //
-    double log_d = x * std::log(mu) - std::lgamma(x + 1) + theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(theta + mu);
-
-    //
-    if (t > -1) {
-        if (x <= t) {
-            log_d = -HUGE_VAL;
-        }
-        else {
-            //
-            const double pb = R::pnbinom(t, theta, theta / tm, 0, 1); // R::pbeta(mu / tm, t + 1, theta, 0, 1);
-
-            if (std::isnan(theta)) {
-                Rcpp::Rcout << x << " " << mu << " " << p << " " << t << " " << theta << " " << tm << " " << theta / tm << " " << pb << "\n";
-            }
-
-            log_d = log_d - pb;
-        }
+    double log_d = -HUGE_VAL;
+    if (is_poisson) {
+        //
+        log_d = ditpois_cpp(x, mu, p, i, t);
     }
+    else {
+        //
+        const double tm = theta + mu;
 
-    //
-    if (i > -1) {
-        if (p > 2e-16) {
-            log_d = std::log(1.0 - p) + log_d;
+        //
+        log_d = x * std::log(mu) - std::lgamma(x + 1) + theta * std::log(theta) - theta * std::log(theta + mu) + std::lgamma(theta + x) - std::lgamma(theta) - x * std::log(tm);
 
-            if (x == i) {
-                log_d = std::log1p(p + std::expm1(log_d));
+        //
+        if (t > -1) {
+            if (x <= t) {
+                log_d = -HUGE_VAL;
+            }
+            else {
+                //
+                const double pb = R::pnbinom(t, theta, theta / tm, 0, 1);
+                log_d = log_d - pb;
+            }
+        }
+
+        //
+        if (i > -1) {
+            if (p > 2e-16) {
+                log_d = std::log(1.0 - p) + log_d;
+
+                if (x == i) {
+                    log_d = std::log1p(p + std::expm1(log_d));
+                }
             }
         }
     }

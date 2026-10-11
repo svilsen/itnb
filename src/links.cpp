@@ -2,92 +2,54 @@
 #include "links.hpp"
 
 //
-Link::Link(const std::string & s_) : s(s_) { }
-
-double Link::link(const double & mu) {
+Link::Link(const std::string & s) {
     if (s == "identity") {
-        return mu;
+        type = 0;
     }
     else if (s == "sqrt") {
-        return std::sqrt(mu);
+        type = 1;
     }
-    else {
-        return std::log(mu);
+    else { // log
+        type = 2;
     }
+}
+
+double Link::link(const double & mu) {
+    switch (type) {
+        case 0 : // identity
+            return mu;
+        case 1 : // sqrt
+            return std::sqrt(mu);
+        case 2 : // log
+            return std::log(mu);
+    }
+
+    return mu;
 }
 
 double Link::link_inv(const double & eta) {
-    if (s == "identity") {
-        double mu = eta;
-        if (mu < 1e-6) {
-            mu = 1e-6;
-        }
+    switch (type) {
+        case 0 : // identity
+            return std::max(eta, 1e-6);
+        case 1 : // sqrt
+            return eta * eta;
+        case 2 : // log
+            return std::exp(eta);
+    }
 
-        return mu;
-    }
-    else if (s == "sqrt") {
-        return eta * eta;
-    }
-    else {
-        return std::exp(eta);
-    }
+    return eta;
 }
 
 double Link::link_inv_dev(const double & mu, const arma::rowvec & x, const int & m) {
-    if (s == "identity") {
-        return x[m];
+    switch (type) {
+        case 0 : // identity
+            return x[m];
+        case 1 : // sqrt
+            return 2.0 * std::sqrt(mu) * x[m];
+        case 2 : // log
+            return mu * x[m];
     }
-    else if (s == "sqrt") {
-        double eta = link_inv(mu);
-        return 2.0 * eta * x[m];
-    }
-    else {
-        return mu * x[m];
-    }
-}
 
-// // Identity
-// double link_identity::link(const double & mu) {
-//     return mu;
-// }
-//
-// double link_identity::link_inv(const double & eta) {
-//     double mu = eta;
-//     if (mu < 1e-6) {
-//         mu = 1e-6;
-//     }
-//
-//     return mu;
-// }
-//
-// double link_identity::link_inv_dev(const double & mu, const arma::vec & x, const int & m) {
-//     return x[m];
-// }
-//
-// // Sqrt.
-// double link_sqrt::link(const double & mu) {
-//     return std::sqrt(mu);
-// }
-//
-// double link_sqrt::link_inv(const double & eta) {
-//     return eta * eta;
-// }
-//
-// double link_sqrt::link_inv_dev(const double & mu, const arma::vec & x, const int & m) {
-//     double eta = link_inv(mu);
-//     return 2.0 * eta * x[m];
-// }
-//
-// // Log.
-// double link_log::link(const double & mu) {
-//     return std::log(mu);
-// }
-//
-// double link_log::link_inv(const double & eta) {
-//     return std::exp(eta);
-// }
-//
-// double link_log::link_inv_dev(const double & mu, const arma::vec & x, const int & m) {
-//     return mu * x[m];
-// }
+    return x[m];
+}
 

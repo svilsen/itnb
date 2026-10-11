@@ -15,7 +15,5 @@ Authors:
   \item Søren B. Vilsen \email{svilsen@math.aau.dk}
 }
 
-
-Søren B. Vilsen <svilsen@math.aau.dk>
 }
 \keyword{internal}

@@ -17,5 +17,5 @@ Predict function of an \link{itnb-object} (an object of class \code{itnb}).
 \details{
 The additional arguments used by the function are '\code{newdata}', and '\code{type}'.
 The argument '\code{newdata}' takes a \link{matrix} or \link{data.frame} containing new covariates, or can be set to \code{NULL} returning the fitted values.
-The argument '\code{type}' takes a string, either \code{"response"} or \code{"response"}, specifying the scale of the predicted/fitted values.
+The argument '\code{type}' takes a string, either \code{"link"} or \code{"response"}, specifying the scale of the predicted/fitted values.
 }

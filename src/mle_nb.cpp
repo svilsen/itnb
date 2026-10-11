@@ -11,13 +11,11 @@
 using namespace roptim;
 
 //// Truncated negative binomial parameters
-class MLE: public Functor {
+class MLE_NB : public Functor {
 public:
-    double lambda;
-
     // Constructor
-    MLE(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, const double & lambda_, Link & LO_) :
-        lambda(lambda_), X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
+    MLE_NB(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+        X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
     double operator()(const arma::vec & par) override {
@@ -26,31 +24,20 @@ public:
 
         //
         double d = 0.0;
-        double penalisation = 0.0;
         for (int n = 0; n < N; n++) {
             //
             const arma::rowvec & x_n = X.row(n);
-            const arma::vec eta_n = x_n * beta;
+            const double & eta_n = arma::dot(x_n, beta);
+            const double & mu_n = LO.link_inv(eta_n);
 
-            const double mu_n = LO.link_inv(eta_n[0]);
-
-            const double e = (mu_n - (t + 1));
-            double g = 0.0;
-            if (e < 0) {
-                g = e * e;
-            }
-
-            const double d_n = ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
-
-            d -= d_n;
-            penalisation += lambda * g;
+            d -= ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
         }
 
         if (std::isinf(d) || std::isnan(d)) {
             d = 1e16;
         }
 
-        return d + penalisation;
+        return d;
     }
 
     // Gradient function
@@ -74,39 +61,35 @@ public:
                 const double & y_theta = y[n] + theta;
 
                 //
-                double gr_beta = (y[n] / mu_n - y_theta * mu_theta_i);
-                double gr_theta = (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
+                double gr_beta = -(y[n] / mu_n - y_theta * mu_theta_i);
+                double gr_theta = -(1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
                 if (t > -1) {
-                    const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, true, true) + R::lbeta(t + 1, theta));
+                    //
+                    const double & b = std::exp(R::pbeta(mu_n * mu_theta_i, t + 1, theta, 1, 1) + R::lbeta(t + 1, theta));
 
                     // Location
                     const double & b_mu_n = std::pow(mu_n, t) * std::pow(theta, theta) / std::pow(mu_theta, t + 1 + theta);
                     const double & I_mu = b_mu_n / b;
 
-                    gr_beta += (-I_mu);
+                    gr_beta += (I_mu);
 
                     // Overdispersion
                     const double & b_t_f = std::pow(mu_n, t + 1.0) * std::pow(theta, theta - 1.0) / std::pow(mu_theta, t + 1 + theta);
-                    const double & b_t_i = beta_derivative_rectangle(0.0, mu_n * mu_theta_i, theta, t, steps);
+                    const double & b_t_i = beta_derivative_boole(0.0, mu_n * mu_theta_i, theta, t, steps);
                     const double & b_t_d = R::digamma(theta) - R::digamma(t + 1.0 + theta);
 
                     const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
-                    gr_theta += (-I_theta);
+                    gr_theta += (I_theta);
                 }
 
                 //
                 for (int m = 0; m < M; m++) {
-                    double gr_g = 0.0;
-                    if (mu_n < (t + 1)) {
-                        gr_g = 2.0 * (mu_n - (t + 1));
-                    }
-
                     const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
-                    gr[m] += (-gr_beta + lambda * gr_g) * gr_mu;
+                    gr[m] += gr_beta * gr_mu;
                 }
 
                 //
-                gr[M] += (-gr_theta) * theta;
+                gr[M] += gr_theta * theta;
             }
         }
         else{
@@ -144,7 +127,7 @@ void optimise_tnb(
         const arma::mat & X, const arma::vec & y,
         const int & i, const int & t, const std::string & link,
         const int & N, const int & M,
-        const double & tolerance, const arma::vec & lambda,
+        const double & tolerance,
         const int & steps, const bool & exact,
         const int & trace
 ) {
@@ -161,13 +144,13 @@ void optimise_tnb(
     pars_j[M] = std::log(theta_j);
 
     //
-    Roptim<MLE> opt("L-BFGS-B");
-    MLE r_log_likelihood(X, y, i, t, steps, exact, lambda[0], LO);
+    Roptim<MLE_NB> opt("L-BFGS-B");
+    MLE_NB log_likelihood(X, y, i, t, steps, exact, LO);
 
     opt.control.trace = trace;
 
     //
-    opt.minimize(r_log_likelihood, pars_j);
+    opt.minimize(log_likelihood, pars_j);
     pars_j = opt.par();
 
     //
@@ -176,7 +159,7 @@ void optimise_tnb(
 
     //
     loglike_j = opt.value();
-    r_log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
+    log_likelihood.ApproximateHessian(opt.par(), approx_hessian);
 }
 
 
@@ -186,7 +169,7 @@ Rcpp::List mle_tnb_cpp(
         const arma::mat & X, const arma::vec & y,
         const arma::vec & beta_0, const double & theta_0, const double & p_0,
         const int & i, const int & t, const std::string & link,
-        const double & tolerance, const arma::vec & lambda,
+        const double & tolerance,
         const int & steps, const bool & exact,
         const int & trace
 ) {
@@ -215,7 +198,7 @@ Rcpp::List mle_tnb_cpp(
         j, not_converged, convergence_flag,
         approx_hessian,
         X, y, i, t, link, N, M,
-        tolerance, lambda,
+        tolerance,
         steps, exact, trace
     );
 

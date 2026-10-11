@@ -3,8 +3,6 @@
 
 #' @title ITNB: Inflated and truncated negative binomial regression
 #'
-#' @author Søren B. Vilsen <svilsen@math.aau.dk>
-#'
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile' 'coef' 'delete.response' 'fitted.values' 'predict' 'residuals' 'printCoefmat' 'sd' 'pnorm'
 #'
@@ -58,9 +56,9 @@ NULL
 #'     \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
 #' }
 #'
-#' @name itnb.ci-object
+#' @name summary.itnb-object
 #'
-#' @rdname itnb.ci-object
+#' @rdname summary.itnb-object
 NULL
 
 #' @title An itnb.ci-object

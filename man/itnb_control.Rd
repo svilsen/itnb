@@ -8,7 +8,6 @@ itnb_control(
   method = "em",
   trace = 0,
   tolerance = 1e-06,
-  lambda = c(0.1, 0.001),
   iteration_min = 2,
   iteration_max = 100,
   steps = 100,
@@ -25,15 +24,13 @@ itnb_control(
 
 \item{tolerance}{Numeric (> 0): Convergence tolerance.}
 
-\item{lambda}{Numeric (> 0): Vector of penalisation constants (see details).}
-
 \item{iteration_min}{Numeric (>= 0): The minimum number of allowed iterations.}
 
 \item{iteration_max}{Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.}
 
 \item{steps}{Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.}
 
-\item{exact}{TRUE/FALSE: Should parameter optimisation use the exact gradient, or finite difference?}
+\item{exact}{TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference (default)?}
 
 \item{overdispersion}{TRUE/FALSE: Should an overdispersion parameter be estimated?}
 
@@ -46,10 +43,4 @@ A list of default arguments for the \link{itnb} function.
 }
 \description{
 Creates a list of default options.
-}
-\details{
-The vector of penalisation constants, \code{lambda}, can be set using one or two elements. If a single element is provided, the penalisation
-constant is fixed in every iteration of the EM-algorithm; however, if two elements are provided, the first is used as the initial penalisation constant, while
-the second is used to scale the penalisation in every iteration, creating a sequence of penalisation constants.
-NB: if the data does not contain an inflation point, or if the inflation point is smaller than the truncation point, then lambda should be set to zero.
 }

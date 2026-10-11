@@ -5,20 +5,20 @@ lm_fast_cpp <- function(X, y) {
     .Call('_itnb_lm_fast_cpp', PACKAGE = 'itnb', X, y)
 }
 
-em_itnb_cpp <- function(X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace) {
-    .Call('_itnb_em_itnb_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace)
+em_itnb_cpp <- function(X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace) {
+    .Call('_itnb_em_itnb_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, theta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace)
 }
 
-em_itpois_cpp <- function(X, y, yi, beta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace) {
-    .Call('_itnb_em_itpois_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, lambda, steps, exact, trace, save_trace)
+em_itpois_cpp <- function(X, y, yi, beta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace) {
+    .Call('_itnb_em_itpois_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace)
 }
 
-mle_tnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace) {
-    .Call('_itnb_mle_tnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace)
+mle_tnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace) {
+    .Call('_itnb_mle_tnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace)
 }
 
-mle_tpois_cpp <- function(X, y, beta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace) {
-    .Call('_itnb_mle_tpois_cpp', PACKAGE = 'itnb', X, y, beta_0, p_0, i, t, link, tolerance, lambda, steps, exact, trace)
+mle_tpois_cpp <- function(X, y, beta_0, p_0, i, t, link, tolerance, steps, exact, trace) {
+    .Call('_itnb_mle_tpois_cpp', PACKAGE = 'itnb', X, y, beta_0, p_0, i, t, link, tolerance, steps, exact, trace)
 }
 
 ritnb_cpp <- function(n, mu, theta, p, i, t) {
