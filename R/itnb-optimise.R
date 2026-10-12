@@ -112,7 +112,7 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 #' @param data \link{data.frame} (or \link[tibble]{tibble}): A data-set used to estimate the parameters.
 #' @param i Numeric (i >= 0): The inflation point.
 #' @param t Numeric (t >= 0): The truncation point.
-#' @param link String: Indicating the link function, set to either 'identity', 'sqrt', or 'log' (default).
+#' @param link String: Indicating the link function, set to either 'identity', 'sqrt', 'log' (default), or reciprocal.
 #' @param control List: A control object, see \link{itnb_control} for details.
 #'
 #' @return An object of class \link{itnb-object}.
@@ -172,8 +172,12 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         beta <- lm_fast_cpp(X[y != i, , drop = FALSE], log(y[y != i, , drop = FALSE]))
         alpha <- sum((y[y != i, drop = FALSE] / exp(X[y != i, , drop = FALSE] %*% beta) - 1)^2) / length(y)
     }
+    else if (link == "reciprocal") {
+        beta <- lm_fast_cpp(X[(y != i) & (y > 0), , drop = FALSE], 1 / (y[(y != i) & (y > 0), , drop = FALSE]))
+        alpha <- sum((y[(y != i) & (y > 0), drop = FALSE] * (X[(y != i) & (y > 0), , drop = FALSE] %*% beta) - 1)^2) / length(y)
+    }
     else {
-        stop("'link' has to be set to either 'identity', 'sqrt', or 'log'.")
+        stop("'link' has to be set to either 'identity', 'sqrt', 'log', or 'reciprocal'.")
     }
 
     ##

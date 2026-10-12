@@ -9,8 +9,11 @@ Link::Link(const std::string & s) {
     else if (s == "sqrt") {
         type = 1;
     }
-    else { // log
+    else if (s == "log") {
         type = 2;
+    }
+    else { // reciprocal
+        type = 3;
     }
 }
 
@@ -22,6 +25,8 @@ double Link::link(const double & mu) {
             return std::sqrt(mu);
         case 2 : // log
             return std::log(mu);
+        case 3 : // reciprocal
+            return 1.0 / mu;
     }
 
     return mu;
@@ -35,6 +40,8 @@ double Link::link_inv(const double & eta) {
             return eta * eta;
         case 2 : // log
             return std::exp(eta);
+        case 3 : // reciprocal
+            return 1.0 / eta;
     }
 
     return eta;
@@ -48,6 +55,8 @@ double Link::link_inv_dev(const double & mu, const arma::rowvec & x, const int &
             return 2.0 * std::sqrt(mu) * x[m];
         case 2 : // log
             return mu * x[m];
+        case 3 : // reciprocal
+            return -mu * mu;
     }
 
     return x[m];
