@@ -156,56 +156,155 @@ lrtest <- function(object, type = "overdispersion", level = 0.05, ...) {
 #'
 #' @export
 lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
+    ##
+    #
     dots <- list(...)
+
+    ##
+    #
     if (is.null(dots[["control"]])) {
-        control <- do.call(itnb_control, list())
+        control <- do.call(itnb_control, object[["control"]])
     }
     else {
-        control <- dots[["control"]]
+        control <- do.call(itnb_control, dots[["control"]])
     }
 
     ##
+    #
+    if (is.null(dots[["bootstrap"]])) {
+        bootstrap <- TRUE
+    }
+    else {
+        bootstrap <- dots[["bootstrap"]]
+        if (!is.logical(bootstrap)) {
+            stop("'bootstrap' needs to be boolean.")
+        }
+    }
+
+    #
+    if (bootstrap) {
+        if (is.null(dots[["parametric"]])) {
+            parametric <- TRUE
+        }
+        else {
+            parametric <- dots[["parametric"]]
+            if (!is.logical(parametric)) {
+                stop("'parametric' needs to be boolean.")
+            }
+
+            if (!parametric) {
+                stop("'parametric' needs to be 'TRUE'.")
+            }
+        }
+
+        if (is.null(dots[["B"]])) {
+            B <- 199
+        }
+        else {
+            B <- dots[["B"]]
+            if (!is.numeric(B)) {
+                stop("'B' needs to be boolean.")
+            }
+            else if (B - floor(B) > 1e-8) {
+                B <- B |> round()
+            }
+        }
+    }
+    else {
+        parametric <- NA
+        B <- NA
+    }
+
+    ##
+    #
+    trace <- dots[["trace"]]
+    if (is.null(trace)) {
+        trace <- 0
+    }
+
+    ##
+    #
     X <- object[["data"]][["X"]]
     y <- object[["data"]][["y"]]
 
+    #
     N <- length(y)
     i <- object[["i"]]
     t <- object[["t"]]
+
     link <- object[["link"]]
 
     ##
-    loglike_o <- object[["loglikelihood"]]
+    #
+    control_r <- control
+    i_r <- i
+    alpha_r <- object[["alpha"]]
     if (type %in% c("o", "overdispersion")) {
         type <- "overdispersion"
+        control_r[["overdispersion"]] <- FALSE
+        alpha_r <- 0.0
         df <- 1
-        control[["overdispersion"]] <- FALSE
-
-        poisson_m <- itnb_matrix(X = X, y = y, i = i, t = t, link = link, control = control)
-        loglike_s <- poisson_m[["loglikelihood"]]
     }
     else if (type %in% c("i", "inflation")) {
         type <- "inflation"
+        i_r <- -1
         df <- 1
-
-        without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
-        loglike_s <- without_inflation[["loglikelihood"]]
     }
     else if (type %in% c("b", "both")) {
         type <- "both"
+        control_r[["overdispersion"]] <- FALSE
+        alpha_r <- 0.0
+        i_r <- -1
         df <- 2
-        control[["overdispersion"]] <- FALSE
-
-        poisson_without_inflation <- itnb_matrix(X = X, y = y, i = -1, t = t, link = link, control = control)
-        loglike_s <- poisson_without_inflation[["loglikelihood"]]
     }
     else {
         stop("'type' only takes the values 'overdispersion', 'inflation', or 'both'.")
     }
 
-    d <- 2.0 * (loglike_s - loglike_o)
+    ##
+    #
+    loglike_o <- object[["loglikelihood"]]
+    loglike_r <- itnb:::itnb_matrix(X = X, y = y, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
 
-    crit_val <- qchisq(1.0 - level / 2, df = df)
-    p_val <- pchisq(d, df = df, lower.tail = FALSE)
+    #
+    d <- -2.0 * (loglike_r - loglike_o)
+
+    ##
+    #
+    if (bootstrap) {
+        ##
+        #
+        d_boot <- rep(NA, B)
+        for (b in seq_len(B)) {
+            if ((trace > 0) && ((b == 1) || ((b %% trace) == 0) || (b == B))) {
+                cat("Iteration:", b, "/", B, "\n")
+            }
+
+            ##
+            #
+            X_b <- X
+            y_b <- ritnb(n = N, mu = mu, alpha = alpha_r, p = p, i = i_r, t = t) |>
+                matrix(ncol = 1)
+
+            ##
+            #
+            loglike_ob <- itnb_matrix(X = X_b, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
+            loglike_rb <- itnb_matrix(X = X_b, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
+
+            d_boot[b] <- -2.0 * (loglike_rb - loglike_ob)
+        }
+
+        ##
+        #
+        crit_val <- quantile(d_boot, probs = 1.0 - level, na.rm = TRUE) |> unname()
+        p_val <- (sum(d < d_boot) + 1) / (B + 1)
+    }
+    else {
+        ##
+        #
+        crit_val <- qchisq(1.0 - level, df = df)
+        p_val <- pchisq(d, df = df, lower.tail = FALSE)
+    }
 
     res <- list(
         lr = d,
@@ -213,7 +312,8 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
         critval = crit_val,
         pval = p_val,
         type = type,
-        level = level
+        level = level,
+        bootstrap = if (bootstrap) list(parametric = parametric, B = B, lr = d_boot) else NA
     )
 
     class(res) <- "lrtest.itnb"
@@ -250,8 +350,18 @@ print.lrtest.itnb <- function(x, ...) {
     cat(" ", paste0("Critical value (level = ", round(x[["level"]], dots[["digits"]]), "): "), round(x[["critval"]], dots[["digits"]]), "\n")
     cat(" ", "Test statistic: ", round(x[["lr"]], dots[["digits"]]), "\n")
     cat(" ", "P-value:", format.pval(x[["pval"]], digits = dots[["digits"]]), "\n")
-
     cat("\n")
+
+    if (!all(is.na(x[["bootstrap"]]))) {
+        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples => p-value lower bound of", paste0(format(1 / (x[["bootstrap"]][["B"]] + 1), digits = dots[["digits"]]), ")."), "\n")
+        cat("\n")
+    }
 
     return(invisible(NULL))
 }
+
+#' @export
+hist.lrtest.itnb <- function(x, ...) {
+
+}
+

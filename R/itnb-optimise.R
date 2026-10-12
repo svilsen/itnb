@@ -646,18 +646,22 @@ summary.itnb <- function(object, ...) {
             alpha <- matrix(nrow = 0, ncol = 0)
         }
 
-        p <- ci[["ci"]][["p"]] |>
-            (\(z) c(
-                mean(z),
-                sd(z),
-                quantile(z, probs = c(sig_level, 1 - sig_level), na.rm = TRUE)
-            ))() |>
-            matrix(nrow = 1) |>
-            structure(.Dimnames = list(
-                paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
-                c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
-            ))
-
+        if (object[["i"]] > -1) {
+            p <- ci[["ci"]][["p"]] |>
+                (\(z) c(
+                    mean(z),
+                    sd(z),
+                    quantile(z, probs = c(sig_level, 1 - sig_level), na.rm = TRUE)
+                ))() |>
+                matrix(nrow = 1) |>
+                structure(.Dimnames = list(
+                    paste(rep(" ", max(nchar(colnames(ci[["ci"]][["beta"]])))), collapse = ""),
+                    c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
+                ))
+        }
+        else {
+            p <- matrix(nrow = 0, ncol = 0)
+        }
     }
     else {
         betas_ci <- qt(1 - sig_level / 2, df = length(r) - length(coefs$beta)) * se
@@ -692,6 +696,7 @@ summary.itnb <- function(object, ...) {
             alpha <- matrix(nrow = 0, ncol = 0)
         }
 
+        if (object[["i"]] > -1) {
         p_se <- sqrt(coefs[["p"]] * (1 - coefs[["p"]]) / length(r))
         p <- matrix(
             c(coefs[["p"]], p_se, max(0, coefs[["p"]] - pnorm(1 - sig_level / 2) * p_se), min(1, coefs[["p"]] + pnorm(1 - sig_level / 2) * p_se)),
@@ -703,6 +708,10 @@ summary.itnb <- function(object, ...) {
                     c("Estimate", "Std. Error", paste0(c("Lower (", "Upper ("), paste0(100 * c(sig_level, 1 - sig_level), "%"), c(")", ")")))
                 )
             )
+        }
+        else {
+            p <- matrix(nrow = 0, ncol = 0)
+        }
     }
 
     ##
@@ -836,4 +845,9 @@ coef.itnb <- function(object, ...) {
     }
 
     return(r)
+}
+
+#' @export
+plot.itnb <- function(x, which, ...) {
+
 }

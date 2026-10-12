@@ -303,7 +303,7 @@ Rcpp::List em_itpois_cpp(
         Rcpp::Named("i") = i,
         Rcpp::Named("t") = t,
         Rcpp::Named("link") = link,
-        Rcpp::Named("loglikelihood") = loglike_j,
+        Rcpp::Named("loglikelihood") = -loglike_j,
         Rcpp::Named("beta") = beta_j,
         Rcpp::Named("alpha") = 0.0,
         Rcpp::Named("p") = p_j,

@@ -336,7 +336,7 @@ Rcpp::List em_itnb_cpp(
         Rcpp::Named("i") = i,
         Rcpp::Named("t") = t,
         Rcpp::Named("link") = link,
-        Rcpp::Named("loglikelihood") = loglike_j,
+        Rcpp::Named("loglikelihood") = -loglike_j,
         Rcpp::Named("beta") = beta_j,
         Rcpp::Named("alpha") = 1.0 / theta_j,
         Rcpp::Named("p") = p_j,
