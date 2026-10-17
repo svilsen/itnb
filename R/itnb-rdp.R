@@ -4,7 +4,7 @@
 #'
 #' @param n Numeric (> 0): The number of observations.
 #' @param mu Numeric (> 0): The expected value.
-#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param alpha Numeric (>= 0): The overdispersion, with '\code{alpha = 1 / theta}'. NB: if '\code{alpha = 0} = 0' the negative binomial distribution reduces to a Poisson distribution.
 #' @param p Numeric (>= 0): The inflation proportion.
 #' @param i Numeric (>= 0): The inflation point.
 #' @param t Numeric (>= 0): The truncation point.
@@ -87,7 +87,7 @@ ritnb <- function(n, mu, alpha, p = NULL, i = NULL, t = NULL) {
 #'
 #' @param x Numeric (>= 0): A vector of quantiles.
 #' @param mu Numeric (> 0): The expected value.
-#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param alpha Numeric (>= 0): The overdispersion, with '\code{alpha = 1 / theta}'. NB: if '\code{alpha = 0} = 0' the negative binomial distribution reduces to a Poisson distribution.
 #' @param p Numeric (>= 0): The inflation proportion.
 #' @param i Numeric (>= 0): The inflation point.
 #' @param t Numeric (>= 0): The truncation point.
@@ -189,7 +189,7 @@ ditnb <- function(x, mu, alpha, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
 #'
 #' @param q Numeric (>= 0): A vector of quantiles.
 #' @param mu Numeric (> 0): The expected value.
-#' @param alpha Numeric (>= 0): The overdispersion.
+#' @param alpha Numeric (>= 0): The overdispersion, with '\code{alpha = 1 / theta}'. NB: if '\code{alpha = 0} = 0' the negative binomial distribution reduces to a Poisson distribution.
 #' @param p Numeric (>= 0): The inflation proportion.
 #' @param i Numeric (>= 0): The inflation point.
 #' @param t Numeric (>= 0): The truncation point.
