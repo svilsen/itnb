@@ -11,7 +11,7 @@ ritnb(n, mu, alpha, p = NULL, i = NULL, t = NULL)
 
 \item{mu}{Numeric (> 0): The expected value.}
 
-\item{alpha}{Numeric (>= 0): The overdispersion.}
+\item{alpha}{Numeric (>= 0): The overdispersion, with '\code{alpha = 1 / theta}'. NB: if '\code{alpha = 0} = 0' the negative binomial distribution reduces to a Poisson distribution.}
 
 \item{p}{Numeric (>= 0): The inflation proportion.}
 

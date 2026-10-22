@@ -1,4 +1,4 @@
-#' ritnb
+#' @title ritnb
 #'
 #' @description Generates \code{n} random numbers from a i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'
@@ -81,7 +81,7 @@ ritnb <- function(n, mu, alpha, p = NULL, i = NULL, t = NULL) {
     return(res[, 1])
 }
 
-#' ditnb
+#' @title ditnb
 #'
 #' @description The probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'
@@ -91,7 +91,7 @@ ritnb <- function(n, mu, alpha, p = NULL, i = NULL, t = NULL) {
 #' @param p Numeric (>= 0): The inflation proportion.
 #' @param i Numeric (>= 0): The inflation point.
 #' @param t Numeric (>= 0): The truncation point.
-#' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?
+#' @param lower_tail TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?
 #' @param return_log TRUE/FALSE: should the logarithm of the probabilities be returned?
 #'
 #' @return A vector the size as \code{x} containing the probability of each value.
@@ -183,7 +183,7 @@ ditnb <- function(x, mu, alpha, p = NULL, i = NULL, t = NULL, lower_tail = TRUE,
     return(res)
 }
 
-#' pitnb
+#' @title pitnb
 #'
 #' @description The cumulative probability of each element in a vector \code{x} following the i-inflated t-truncated negative binomial distribution with parameters \code{mu}, \code{alpha}, and \code{p} which is inflated at \code{i} and truncated at \code{t}.
 #'

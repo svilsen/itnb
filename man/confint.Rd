@@ -9,9 +9,9 @@
 \arguments{
 \item{object}{An \link{itnb-object}.}
 
-\item{level}{Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.}
+\item{level}{Numeric (> 0): The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.}
 
-\item{B}{Numeric: The number of simulations used to create the confidence envelopes.}
+\item{B}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
 
 \item{parametric}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
 

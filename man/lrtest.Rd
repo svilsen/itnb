@@ -14,12 +14,12 @@ lrtest(object, type = "overdispersion", level = 0.05, ...)
 
 \item{type}{String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.}
 
-\item{level}{Numeric: The significance level.}
+\item{level}{Numeric (> 0): The significance level.}
 
 \item{...}{Additional parameters (see details).}
 }
 \value{
-An \link{lrtest-object}.
+An \link{lrtest.itnb-object}.
 }
 \description{
 Likelihood ratio tests for the need of inflation and/or overdispersion in inflated and truncated negative binomial regression models.

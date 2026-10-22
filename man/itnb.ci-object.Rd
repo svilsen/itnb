@@ -6,9 +6,9 @@
 \description{
 A itnb.ci-object is a list of class \code{itnb.ci} containing the following:
 \describe{
-    \item{\code{ci}}{A list of elements corresponding to the mean, overdispersion, and inflation proportion. If a confidence level is specified it contains the quantiles for each parameter, otherwise all estimated parameters are returned.}
-    \item{\code{parametric}}{Boolean indicating whether the bootstrap was parametric or non-parametric.}
-    \item{\code{level}}{The specified confidence level; if a confidence level is not supplied it is \code{NA}.}
-    \item{\code{nr_simulations}}{The number of bootstrap samples used to create the simulated confidence envelopes.}
+    \item{\code{ci}}{List: Boostrap confidence intervals of regression coefficients, overdispersion, and inflation proportion. If a confidence level is specified it contains the quantiles for each parameter, otherwise the estimated parameters are returned for all \code{B} bootstrap samples.}
+    \item{\code{parametric}}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
+    \item{\code{level}}{Numeric (> 0): The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.}
+    \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
 }
 }

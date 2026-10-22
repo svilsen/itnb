@@ -18,17 +18,17 @@ itnb_control(
 )
 }
 \arguments{
-\item{method}{String: The method used to optimise the parameters (currently only accepts \code{method = 'em'}).}
+\item{method}{String: The method used to optimise the parameters (currently only accepts '\code{method = "em"}').}
 
-\item{trace}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+\item{trace}{Numeric (>= 0): Showing a trace every '\code{trace}' number of iterations.}
 
 \item{tolerance}{Numeric (> 0): Convergence tolerance.}
 
 \item{iteration_min}{Numeric (>= 0): The minimum number of allowed iterations.}
 
-\item{iteration_max}{Numeric (>= \code{iteration_min}): The maximum number of allowed iterations.}
+\item{iteration_max}{Numeric (>= '\code{iteration_min}'): The maximum number of allowed iterations.}
 
-\item{steps}{Numeric (>= 0): The number of steps to use when approximating the integral needed for the derivative of the overdispersion.}
+\item{steps}{Numeric (>= 0): The number of steps used when approximating the integral needed for the derivative of the overdispersion.}
 
 \item{exact}{TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference (default)?}
 
@@ -36,7 +36,7 @@ itnb_control(
 
 \item{save_data}{TRUE/FALSE: Should the data be stored in the return object?}
 
-\item{save_trace}{TRUE/FALSE: Should the entire trace be stored in the return object?}
+\item{save_trace}{TRUE/FALSE: Should the trace be stored in the return object?}
 }
 \value{
 A list of default arguments for the \link{itnb} function.

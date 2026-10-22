@@ -20,7 +20,7 @@ ditnb(
 
 \item{mu}{Numeric (> 0): The expected value.}
 
-\item{alpha}{Numeric (>= 0): The overdispersion.}
+\item{alpha}{Numeric (>= 0): The overdispersion, with '\code{alpha = 1 / theta}'. NB: if '\code{alpha = 0} = 0' the negative binomial distribution reduces to a Poisson distribution.}
 
 \item{p}{Numeric (>= 0): The inflation proportion.}
 
@@ -28,7 +28,7 @@ ditnb(
 
 \item{t}{Numeric (>= 0): The truncation point.}
 
-\item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of\eqn{P[X \geq x]}?}
+\item{lower_tail}{TRUE/FALSE: should \eqn{P[X \leq x]} be returned in favour of \eqn{P[X \geq x]}?}
 
 \item{return_log}{TRUE/FALSE: should the logarithm of the probabilities be returned?}
 }

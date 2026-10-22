@@ -6,15 +6,17 @@
 \description{
 A summary.itnb-object is a list of class \code{summary.itnb} containing the following:
 \describe{
-    \item{\code{formula}}{The \link{formula} supplied to the model.}
-    \item{\code{link}}{The specified link function.}
-    \item{\code{residuals}}{The residuals of the fitted model.}
-    \item{\code{level}}{The specified confidence level.}
-    \item{\code{coefficients}}{The estimated coefficients and bootstrap confidence intervals.}
-    \item{\code{overdispersion}}{The estimated overdispersion and bootstrap confidence intervals.}
-    \item{\code{inflation}}{The estimated inflation proportion and bootstrap confidence intervals.}
-    \item{\code{parametric}}{Boolean indicating whether the bootstrap was parametric or non-parametric.}
-    \item{\code{nr_simulations}}{The number of bootstrap samples used to create the simulated confidence envelopes.}
-    \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
+    \item{\code{formula}}{\link{formula}: The formula of the specified the model.}
+    \item{\code{i}}{Numeric (>= 0): The specified inflation point.}
+    \item{\code{t}}{Numeric (>= 0): The specified truncation point.}
+    \item{\code{link}}{String: The specified link function.}
+    \item{\code{residuals}}{Vector: The residuals of the fitted model.}
+    \item{\code{type}}{String: The type of residuals calculated.}
+    \item{\code{level}}{Numeric (> 0): The confidence level.}
+    \item{\code{coefficients}}{\link{matrix}: The estimates, standard errors, confidence intervals, test-statistic, and p-value of the regression coefficients.}
+    \item{\code{overdispersion}}{\link{matrix}: The estimates, standard errors, confidence intervals, test-statistic, and p-value of the overdispersion.}
+    \item{\code{inflation}}{\link{matrix}: The estimates, standard errors, confidence intervals, test-statistic, and p-value of the inflation proportion.}
+    \item{\code{bootstrap}}{\link{itnb.ci-object}: If bootstrap was used to determine the standard error, confidence intervals, test-statistic, and p-value, then it contains the resulting \link{itnb.ci-object}. NB: If '\code{bootstrap = FALSE}' it will return '\code{NA}'.}
+    \item{\code{iterations}}{Numeric: The number of iterations of the expectation-maximisation algorithm.}
 }
 }

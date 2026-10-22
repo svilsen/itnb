@@ -3,12 +3,15 @@
 #' @description Bootstrap confidence intervals of the parameters estimated by the \link{itnb} function.
 #'
 #' @param object An \link{itnb-object}.
-#' @param level Numeric: The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
-#' @param B Numeric: The number of simulations used to create the confidence envelopes.
+#' @param level Numeric (> 0): The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
+#' @param B Numeric (> 0): The number of simulations used to create the confidence envelopes.
 #' @param parametric TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?
 #' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
 #'
 #' @example inst/examples/simulation_itnb_example.R
+#'
+#' @rdname confint
+#' @method confint itnb
 #'
 #' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 #' @export
@@ -78,6 +81,9 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
         else if (link == "log") {
             mu <- exp(mu)
         }
+        else if (link == "reciprocal") {
+            mu <- 1 / mu
+        }
     }
 
     ##
@@ -139,12 +145,12 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
 #'
 #' @param object An \link{itnb-object}.
 #' @param type String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.
-#' @param level Numeric: The significance level.
+#' @param level Numeric (> 0): The significance level.
 #' @param ... Additional parameters (see details).
 #'
 #' @details ...
 #'
-#' @return An \link{lrtest-object}.
+#' @return An \link{lrtest.itnb-object}.
 #'
 #' @export
 lrtest <- function(object, type = "overdispersion", level = 0.05, ...) {
@@ -234,6 +240,25 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
     link <- object[["link"]]
 
+    #
+    beta <- object[["beta"]]
+    if (parametric) {
+        mu <- X %*% beta
+
+        if (link == "sqrt") {
+            mu <- mu * mu
+        }
+        else if (link == "log") {
+            mu <- exp(mu)
+        }
+        else if (link == "reciprocal") {
+            mu <- 1 / mu
+        }
+    }
+
+    #
+    p <- object[["p"]]
+
     ##
     #
     control_r <- control
@@ -264,7 +289,7 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     ##
     #
     loglike_o <- object[["loglikelihood"]]
-    loglike_r <- itnb:::itnb_matrix(X = X, y = y, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
+    loglike_r <- itnb_matrix(X = X, y = y, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
 
     #
     d <- -2.0 * (loglike_r - loglike_o)
@@ -282,14 +307,13 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
             ##
             #
-            X_b <- X
             y_b <- ritnb(n = N, mu = mu, alpha = alpha_r, p = p, i = i_r, t = t) |>
                 matrix(ncol = 1)
 
             ##
             #
-            loglike_ob <- itnb_matrix(X = X_b, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
-            loglike_rb <- itnb_matrix(X = X_b, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
+            loglike_ob <- itnb_matrix(X = X, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
+            loglike_rb <- itnb_matrix(X = X, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
 
             d_boot[b] <- -2.0 * (loglike_rb - loglike_ob)
         }

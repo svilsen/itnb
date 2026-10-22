@@ -11,10 +11,12 @@
 
 \item{...}{Additional arguments (see details).}
 }
+\value{
+Residuals.
+}
 \description{
-Residual function of an \link{itnb-object} (an object of class \code{itnb}).
+Residual function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.
 }
 \details{
-The additional argument used by the function is '\code{type}'; taking a string, either \code{"pearson"}, \code{"deviance"}, \code{"response"}, \code{"link"}, specifying the scale
-of the residuals.
+The additional argument is '\code{type}': a string specifying the scale of the residuals, either \code{"pearson"}, \code{"deviance"}, \code{"response"}, or \code{"link"}.
 }

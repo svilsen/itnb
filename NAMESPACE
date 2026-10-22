@@ -3,8 +3,10 @@
 S3method(coef,itnb)
 S3method(confint,itnb)
 S3method(fitted,itnb)
+S3method(hist,lrtest.itnb)
 S3method(itnb,formula)
 S3method(lrtest,itnb)
+S3method(plot,itnb)
 S3method(predict,itnb)
 S3method(print,lrtest.itnb)
 S3method(print,summary.itnb)
@@ -25,9 +27,12 @@ importFrom(stats,
   'model.frame',
   'model.matrix',
   'model.response',
+  'pchisq',
   'pnorm',
   'predict',
   'printCoefmat',
+  'qchisq',
+  'qt',
   'quantile',
   'residuals',
   'sd',

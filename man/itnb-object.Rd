@@ -6,21 +6,20 @@
 \description{
 An itnb-object is a list of class \code{itnb} containing the following:
 \describe{
-    \item{\code{formula}}{The \link{formula} supplied to the model.}
-    \item{\code{data}}{If \code{save_trace = TRUE} in the control object, it contains the data used to optimise the parameters of the model, otherwise it is \code{NA}.}
-    \item{\code{i}}{The specified inflation point.}
-    \item{\code{t}}{The specified truncation point.}
-    \item{\code{link}}{The specified link function.}
-    \item{\code{loglikelihood}}{The loglikelihood of the optimised parameters.}
-    \item{\code{beta}}{The optimised regression coefficients.}
-    \item{\code{alpha}}{The optimised overdispersion (correpsonds to 1 / theta in the standard parameterisation).}
-    \item{\code{p}}{The optimised inflation proportion.}
-    \item{\code{vcov}}{The variance-covariance matrix of the model parameters.}
-    \item{\code{logtheta}}{The standard error of the logarithm of theta (1 / alpha).}
-    \item{\code{trace}}{If \code{save_trace = TRUE} in the control object, it contains a \link{data.frame} of the trace produced by the optimisation routine, otherwise it is \code{NA}.}
-    \item{\code{overdispersion}}{Boolean indicating whether overdispersion is included in the model.}
-    \item{\code{converged}}{Boolean indicating whether the optimisation routine did or did not converge.}
-    \item{\code{iterations}}{The number of EM iterations, returned when the inflation and truncated negative binomial regression model cannot be separated.}
-    \item{\code{flag}}{If the optimisation routine did not converge, a string indicating the potential point of failure is returned, otherwise it is \code{NA}.}
+    \item{\code{formula}}{\link{formula}: The formula of the specified the model.}
+    \item{\code{data}}{\link{data.frame}: The data-set used to estimate the parameters. NB: If '\code{save_trace = FALSE}' in the control object (see \link{itnb_control}) it will return '\code{NA}'.}
+    \item{\code{i}}{Numeric (>= 0): The specified inflation point.}
+    \item{\code{t}}{Numeric (>= 0): The specified truncation point.}
+    \item{\code{link}}{String: The specified link function.}
+    \item{\code{loglikelihood}}{Numeric: The loglikelihood of the estimated model parameters.}
+    \item{\code{beta}}{\link{matrix}: The estimated regression coefficients.}
+    \item{\code{alpha}}{Numeric: The estimated overdispersion (correpsonds to 1 / theta in the standard parameterisation).}
+    \item{\code{p}}{Numeric: The estimated inflation proportion.}
+    \item{\code{vcov}}{\link{matrix}: The variance-covariance matrix of the estimated model parameters.}
+    \item{\code{logtheta}}{Numeric: The standard error of the logarithm of theta (1 / alpha).}
+    \item{\code{trace}}{\link{data.frame}: The trace of the estimated parameters. NB: If '\code{save_trace = FALSE}' it will return '\code{NA}'.}
+    \item{\code{converged}}{TRUE/FALSE: Did the optimisation converge?}
+    \item{\code{iterations}}{Numeric: The number of iterations of the expectation-maximisation algorithm.}
+    \item{\code{flag}}{String: Indicating the potential point of failure if the algorithm did not converge. NB: if the algorithm did converge it will return '\code{NA}'.}
 }
 }
