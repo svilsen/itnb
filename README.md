@@ -1,11 +1,16 @@
-# itnb
+# Inflated and truncated negative binomial regression
 The `itnb`-package implements an inflated and truncated negative binomial distribution (`itnb`), as well as an interface for estimating the parameters in an `itnb` regression model. The package utilises an expectation-maximisation (EM) algorithm for estimating the mean, overdispersion, and inflation parameters when the inflation cannot be separated from the truncated negative binomial regression model, otherwise it estimates the parameters by maximum likelihood (MLE). Furthermore, parametric and non-parametric bootstraps are implemented to construct confidence envelopes for the estimated parameters.
 
 ## Installation
 The `itnb`-package depends on `R` (>= 4.1), `Rcpp`, `RcppArmadillo`, `roptim`, and `stats`. As the package is not available on CRAN, devtools is needed to install the package from github. From `R`, run the following commands:  
 ```r
-install.packages("devtools")
-devtools::install_github("svilsen/itnb")
+# Install remotes if not already installed
+if (!requireNamespace("remotes", quietly = TRUE)) {
+    install.packages("remotes")
+}
+
+# Install itnb from GitHub
+remotes::install_github("svilsen/itnb")
 ```
 
 ## Usage
@@ -39,7 +44,10 @@ m <- itnb(
 )
 
 summary(m)
-lrtest(m, type = "overdispersion")
+
+## Likelihood ratio test
+(lr <- lrtest(m, type = "overdispersion"))
+hist(lr)
 ```
 
 ## License
