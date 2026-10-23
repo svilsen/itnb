@@ -12,7 +12,7 @@
 \item{...}{Additional arguments (see details).}
 }
 \value{
-A function summary.
+A summary of an \link{itnb-object}.
 }
 \description{
 Summary function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.

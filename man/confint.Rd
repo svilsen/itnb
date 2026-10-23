@@ -4,24 +4,30 @@
 \alias{confint.itnb}
 \title{Confidence intervals of itnb-object.}
 \usage{
-\method{confint}{itnb}(object, level = 0.95, B = 200, parametric = FALSE, trace = 0)
+\method{confint}{itnb}(object, parm, level = 0.95, ...)
 }
 \arguments{
-\item{object}{An \link{itnb-object}.}
+\item{object}{\link{itnb-object}.}
+
+\item{parm}{String: Specification of which parameters are to be given confidence intervals, either a vector of numbers or a vector of names. If missing confidence intervals will be made for all parameters. NB: currently not used.}
 
 \item{level}{Numeric (> 0): The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.}
 
-\item{B}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
-
-\item{parametric}{TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?}
-
-\item{trace}{Numeric (>= 0): showing a trace every \code{trace} number of iterations.}
+\item{...}{Additional arguments (see details).}
 }
 \value{
 If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 }
 \description{
 Bootstrap confidence intervals of the parameters estimated by the \link{itnb} function.
+}
+\details{
+The additional arguments are:
+\describe{
+     \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+     \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap?}
+     \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+}
 }
 \examples{
 #

@@ -10,7 +10,7 @@ lrtest(object, type = "overdispersion", level = 0.05, ...)
 \method{lrtest}{itnb}(object, type = "overdispersion", level = 0.05, ...)
 }
 \arguments{
-\item{object}{An \link{itnb-object}.}
+\item{object}{\link{itnb-object}.}
 
 \item{type}{String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.}
 
@@ -20,10 +20,30 @@ lrtest(object, type = "overdispersion", level = 0.05, ...)
 }
 \value{
 An \link{lrtest.itnb-object}.
+
+An \link{lrtest.itnb-object}.
 }
 \description{
-Likelihood ratio tests for the need of inflation and/or overdispersion in inflated and truncated negative binomial regression models.
+Likelihood ratio tests for inflation and/or overdispersion in inflated and truncated negative binomial regression models.
+
+Likelihood ratio tests for inflation and/or overdispersion in inflated and truncated negative binomial regression models.
 }
 \details{
-...
+The additional arguments are:
+\describe{
+     \item{\code{control}}{List: A control object (see \link{itnb_control}).}
+     \item{\code{bootstrap}}{TRUE/FALSE: Should the likelihood ratio test be performed using paramteric bootrapping?}
+     \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+     \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap? NB: Only accepts \code{TRUE}.}
+     \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+}
+
+The additional arguments are:
+\describe{
+     \item{\code{control}}{List: A control object (see \link{itnb_control}).}
+     \item{\code{bootstrap}}{TRUE/FALSE: Should the likelihood ratio test be performed using paramteric bootrapping?}
+     \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+     \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap? NB: Only accepts \code{TRUE}.}
+     \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+}
 }

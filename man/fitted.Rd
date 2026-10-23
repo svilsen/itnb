@@ -12,7 +12,7 @@
 \item{...}{Additional arguments (see details).}
 }
 \value{
-Fitted values.
+A vector of fitted values.
 }
 \description{
 Fitted function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.

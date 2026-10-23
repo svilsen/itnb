@@ -119,7 +119,7 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 #' @param link String: Specifying the link function, set to either \code{"identity"}, \code{"sqrt"}, \code{"log"} (default), or \code{"reciprocal"}.
 #' @param control List: A control object (see \link{itnb_control}).
 #'
-#' @return An object of class \link{itnb-object}.
+#' @return An \link{itnb-object}.
 #'
 #' @example inst/examples/itnb_example.R
 #'
@@ -145,6 +145,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         warning("'i' needs to have length 1, only the first element is used.")
         i <- i[1]
     }
+
     i <- ceiling(i)
 
     ##
@@ -160,6 +161,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
         warning("'t' needs to have length 1, only the first element is used.")
         t <- t[1]
     }
+
     t <- ceiling(t)
 
     ##
@@ -267,7 +269,7 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 #' @param link String: Specifying the link function, set to either \code{"identity"}, \code{"sqrt"}, \code{"log"} (default), or \code{"reciprocal"}.
 #' @param control List: A control object (see \link{itnb_control}).
 #'
-#' @return An object of class \link{itnb-object}.
+#' @return An \link{itnb-object}.
 #'
 #' @method itnb formula
 #' @rdname itnb
@@ -276,9 +278,12 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
 #'
 #' @export
 itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log", control = list()) {
+    ##
+    #
     control <- do.call(itnb_control, control)
 
     ## Checks for 'data'
+    #
     keep_formula <- TRUE
     if (is.null(data)) {
         data <- tryCatch(
@@ -304,6 +309,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
     formula <- strip_terms(formula)
 
     ##
+    #
     if ((is.null(i) | (i < 0)) & (is.null(t) | (t < 0))) {
         ##
         if (control[["overdispersion"]]) {
@@ -380,7 +386,7 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
 #'      \item{\code{type}}{String: Specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.}
 #' }
 #'
-#' @return Predicted values.
+#' @return A vector of predicted values.
 #'
 #' @method predict itnb
 #' @rdname predict
@@ -404,6 +410,7 @@ predict.itnb <- function(object, ...) {
     }
 
     ##
+    #
     if (any(is.null(dots[["newdata"]]))) {
         if (all(is.na(object[["data"]]))) {
             stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
@@ -445,8 +452,12 @@ predict.itnb <- function(object, ...) {
         else if (link == "log") {
             pred <- exp(pred)
         }
+        else if (link == "reciprocal") {
+            pred <- 1 / pred
+        }
     }
 
+    #
     return(pred[, 1])
 }
 
@@ -463,7 +474,7 @@ predict.itnb <- function(object, ...) {
 #'      \item{\code{type}}{String: Specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.}
 #' }
 #'
-#' @return Fitted values.
+#' @return A vector of fitted values.
 #'
 #' @method fitted itnb
 #' @rdname fitted
@@ -499,7 +510,7 @@ fitted.itnb <- function(object, ...) {
 #'
 #' @details The additional argument is '\code{type}': a string specifying the scale of the residuals, either \code{"pearson"}, \code{"deviance"}, \code{"response"}, or \code{"link"}.
 #'
-#' @return Residuals.
+#' @return A vector of residuals.
 #'
 #' @method residuals itnb
 #' @rdname residuals
@@ -539,6 +550,9 @@ residuals.itnb <- function(object, ...) {
         }
         else if (link == "log") {
             y <- log(y)
+        }
+        else if (link == "reciprocal") {
+            y <- 1 / y
         }
     }
 
@@ -592,7 +606,7 @@ residuals.itnb <- function(object, ...) {
 #'      \item{\code{type}}{String: Specifying the scale of the residuals (see \link{residuals.itnb}).}
 #' }
 #'
-#' @return A function summary.
+#' @return A summary of an \link{itnb-object}.
 #'
 #' @method summary itnb
 #' @rdname summary
@@ -786,6 +800,18 @@ summary.itnb <- function(object, ...) {
     return(res)
 }
 
+#' @title Print Summary
+#'
+#' @description Print a \link{summary.itnb-object}, i.e., a summary of an \link{itnb-object}.
+#'
+#' @param x \link{summary.itnb-object}
+#' @param ... Additional arguments (see \link{print} and \link{printCoefmat}).
+#'
+#' @return An invisible \code{NULL}.
+#'
+#' @method print summary.itnb
+#' @rdname print
+#'
 #' @export
 print.summary.itnb <- function(x, ...) {
     ##
@@ -903,7 +929,25 @@ coef.itnb <- function(object, ...) {
     return(r)
 }
 
+#' @title Diagnostic Plots
+#'
+#' @description ...
+#'
+#' @param x \link{itnb-object}.
+#' @param which Integer (> 0):
+#' @param ... Additional arguments (see details).
+#'
+#' @details ...
+#'
+#' @return An invisible \code{NULL}.
+#'
+#' @method plot itnb
+#' @rdname plot
+#'
 #' @export
 plot.itnb <- function(x, which, ...) {
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
 
+    return(invisible(NULL))
 }

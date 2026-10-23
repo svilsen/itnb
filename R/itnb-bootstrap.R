@@ -1,12 +1,18 @@
-#' Confidence intervals of itnb-object.
+#' @title Confidence intervals of itnb-object.
 #'
 #' @description Bootstrap confidence intervals of the parameters estimated by the \link{itnb} function.
 #'
-#' @param object An \link{itnb-object}.
+#' @param object \link{itnb-object}.
+#' @param parm String: Specification of which parameters are to be given confidence intervals, either a vector of numbers or a vector of names. If missing confidence intervals will be made for all parameters. NB: currently not used.
 #' @param level Numeric (> 0): The confidence level. If left as \code{NULL} all parametric bootstrap simulations are returned.
-#' @param B Numeric (> 0): The number of simulations used to create the confidence envelopes.
-#' @param parametric TRUE/FALSE: should the envelopes be simulated using the parametric bootstrap?
-#' @param trace Numeric (>= 0): showing a trace every \code{trace} number of iterations.
+#' @param ... Additional arguments (see details).
+#'
+#' @details The additional arguments are:
+#' \describe{
+#'      \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+#'      \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap?}
+#'      \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+#' }
 #'
 #' @example inst/examples/simulation_itnb_example.R
 #'
@@ -15,7 +21,11 @@
 #'
 #' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
 #' @export
-confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trace = 0) {
+confint.itnb <- function(object, parm, level = 0.95, ...) {
+    ##
+    #
+    dots <- list(...)
+
     ##
     if (all(is.na(object[["data"]]))) {
         stop("The 'data' was not found. Set 'save_data = TRUE' in the 'itnb_control' function, and re-run the optimisation routine.")
@@ -32,26 +42,49 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
     }
 
     ##
+    if (is.null(dots[["B"]])) {
+        B <- 200
+    }
+    else {
+        B <- dots[["B"]]
+    }
+
     if (!is.numeric(B)) {
         stop("'B' has to be numeric.")
     }
     else if (B < 1) {
         stop("'B' has to be > 0.")
     }
+
     B <- ceiling(B)
 
     ##
+    if (is.null(dots[["parametric"]])) {
+        parametric <- FALSE
+    }
+    else {
+        parametric <- dots[["parametric"]]
+    }
+
     if (!is.logical(parametric)) {
         stop("'parametric' has to be logical.")
     }
 
     ##
+    if (is.null(dots[["trace"]])) {
+        trace <- 0
+    }
+    else {
+        trace <- dots[["trace"]]
+    }
+
     if (!is.numeric(trace)) {
         stop("'trace' has to be numeric.")
     }
     else if (trace < 0) {
         stop("'trace' has to be >= 0.")
     }
+
     trace <- ceiling(trace)
 
     ##
@@ -139,16 +172,23 @@ confint.itnb <- function(object, level = 0.95, B = 200, parametric = FALSE, trac
 }
 
 
-#' Likelihood ratio tests
+#' @title Likelihood ratio tests
 #'
-#' @description Likelihood ratio tests for the need of inflation and/or overdispersion in inflated and truncated negative binomial regression models.
+#' @description Likelihood ratio tests for inflation and/or overdispersion in inflated and truncated negative binomial regression models.
 #'
-#' @param object An \link{itnb-object}.
+#' @param object \link{itnb-object}.
 #' @param type String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.
 #' @param level Numeric (> 0): The significance level.
 #' @param ... Additional parameters (see details).
 #'
-#' @details ...
+#' @details The additional arguments are:
+#' \describe{
+#'      \item{\code{control}}{List: A control object (see \link{itnb_control}).}
+#'      \item{\code{bootstrap}}{TRUE/FALSE: Should the likelihood ratio test be performed using paramteric bootrapping?}
+#'      \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+#'      \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap? NB: Only accepts \code{TRUE}.}
+#'      \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+#' }
 #'
 #' @return An \link{lrtest.itnb-object}.
 #'
@@ -157,6 +197,26 @@ lrtest <- function(object, type = "overdispersion", level = 0.05, ...) {
     UseMethod("lrtest")
 }
 
+#' @title Likelihood ratio tests
+#'
+#' @description Likelihood ratio tests for inflation and/or overdispersion in inflated and truncated negative binomial regression models.
+#'
+#' @param object \link{itnb-object}.
+#' @param type String: The likelihood ratio test performed, either \code{"overdispersion"}, \code{"inflation"}, or \code{"both"}.
+#' @param level Numeric (> 0): The significance level.
+#' @param ... Additional parameters (see details).
+#'
+#' @details The additional arguments are:
+#' \describe{
+#'      \item{\code{control}}{List: A control object (see \link{itnb_control}).}
+#'      \item{\code{bootstrap}}{TRUE/FALSE: Should the likelihood ratio test be performed using paramteric bootrapping?}
+#'      \item{\code{B}}{Numeric (> 0): The number of simulations used to create the confidence envelopes.}
+#'      \item{\code{parametric}}{TRUE/FALSE: Should the envelopes be simulated using the parametric bootstrap? NB: Only accepts \code{TRUE}.}
+#'      \item{\code{trace}}{Numeric (>= 0): Showing a trace every \code{trace} number of iterations.}
+#' }
+#'
+#' @return An \link{lrtest.itnb-object}.
+#'
 #' @rdname lrtest
 #' @method lrtest itnb
 #'
@@ -344,6 +404,20 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     return(res)
 }
 
+#' @title Print LR-test
+#'
+#' @description Print a \link{lrtest.itnb-object}, i.e., the likelihood ratio test results of an \link{itnb-object}.
+#'
+#' @param x \link{lrtest.itnb-object}
+#' @param ... Additional arguments (see details).
+#'
+#' @details The additional argument is \code{digits}, i.e., the number of digits to show in the printed results.
+#'
+#' @return An invisible \code{NULL}.
+#'
+#' @method print lrtest.itnb
+#' @rdname print
+#'
 #' @export
 print.lrtest.itnb <- function(x, ...) {
     dots <- list(...)
@@ -384,8 +458,25 @@ print.lrtest.itnb <- function(x, ...) {
     return(invisible(NULL))
 }
 
+#' @title Histogram
+#'
+#' @description ...
+#'
+#' @param x \link{lrtest.itnb-object}.
+#' @param ... Additional arguments (see details).
+#'
+#' @details ...
+#'
+#' @return An invisible \code{NULL}.
+#'
+#' @method hist lrtest.itnb
+#' @rdname hist
+#'
 #' @export
 hist.lrtest.itnb <- function(x, ...) {
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
 
+    return(invisible(NULL))
 }
 

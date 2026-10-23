@@ -12,7 +12,7 @@
 \item{...}{Additional arguments (see details).}
 }
 \value{
-Predicted values.
+A vector of predicted values.
 }
 \description{
 Predict function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.

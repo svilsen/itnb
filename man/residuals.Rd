@@ -12,7 +12,7 @@
 \item{...}{Additional arguments (see details).}
 }
 \value{
-Residuals.
+A vector of residuals.
 }
 \description{
 Residual function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.
