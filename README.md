@@ -15,16 +15,17 @@ remotes::install_github("svilsen/itnb")
 
 ## Usage
 ```r
+## Load package
 library("itnb")
 
 ## Setting parameters
 n <- 150
-i <- 2
+i <- 5
 t <- 1
 
-beta <- c(0.5, 2)
-alpha <- 0.5
-p <- 0.1
+beta <- c(0.5, 1.0)
+alpha <- 0.05
+p <- 0.2
 
 ## Generating covariates
 x <- sort(runif(n, 0, 4))
