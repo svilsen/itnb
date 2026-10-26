@@ -47,8 +47,8 @@ m <- itnb(
 summary(m)
 
 ## Likelihood ratio test
-(lr <- lrtest(m, type = "overdispersion"))
-hist(lr)
+(lr <- lrtest(m, B = 1999, type = "overdispersion"))
+hist(lr, xlog = TRUE)
 ```
 
 ## License
