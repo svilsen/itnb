@@ -2,21 +2,18 @@
 % Please edit documentation in R/itnb-bootstrap.R
 \name{hist.lrtest.itnb}
 \alias{hist.lrtest.itnb}
-\title{Histogram}
+\title{Likelihood Ratio Histogram}
 \usage{
 \method{hist}{lrtest.itnb}(x, ...)
 }
 \arguments{
 \item{x}{\link{lrtest.itnb-object}.}
 
-\item{...}{Additional arguments (see details).}
+\item{...}{Additional arguments (see \link{hist}).}
 }
 \value{
 An invisible \code{NULL}.
 }
 \description{
-...
-}
-\details{
-...
+Histogram of the likelihood ratio sample distribution found by parametric bootstrap.
 }

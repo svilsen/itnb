@@ -17,7 +17,7 @@
 An invisible \code{NULL}.
 }
 \description{
-...
+Diagnostic plots for inflated and truncated negative binomial regression models.
 }
 \details{
 ...
