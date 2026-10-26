@@ -389,7 +389,6 @@ itnb.formula <- function(formula, data = NULL, i = NULL, t = NULL, link = "log",
 #' @return A vector of predicted values.
 #'
 #' @method predict itnb
-#' @rdname predict
 #'
 #' @export
 predict.itnb <- function(object, ...) {
@@ -477,7 +476,6 @@ predict.itnb <- function(object, ...) {
 #' @return A vector of fitted values.
 #'
 #' @method fitted itnb
-#' @rdname fitted
 #'
 #' @export
 fitted.itnb <- function(object, ...) {
@@ -513,7 +511,6 @@ fitted.itnb <- function(object, ...) {
 #' @return A vector of residuals.
 #'
 #' @method residuals itnb
-#' @rdname residuals
 #'
 #' @export
 residuals.itnb <- function(object, ...) {
@@ -609,7 +606,6 @@ residuals.itnb <- function(object, ...) {
 #' @return A summary of an \link{itnb-object}.
 #'
 #' @method summary itnb
-#' @rdname summary
 #'
 #' @export
 summary.itnb <- function(object, ...) {
@@ -810,7 +806,6 @@ summary.itnb <- function(object, ...) {
 #' @return An invisible \code{NULL}.
 #'
 #' @method print summary.itnb
-#' @rdname print
 #'
 #' @export
 print.summary.itnb <- function(x, ...) {
@@ -889,7 +884,6 @@ print.summary.itnb <- function(x, ...) {
 #' @return If '\code{par}' is \code{NULL} a list of all parameters will be returned, otherwise the function only returns the parameter specified by '\code{par}'.
 #'
 #' @method coef itnb
-#' @rdname coef
 #'
 #' @export
 coef.itnb <- function(object, ...) {
@@ -931,7 +925,7 @@ coef.itnb <- function(object, ...) {
 
 #' @title Diagnostic Plots
 #'
-#' @description ...
+#' @description Diagnostic plots for inflated and truncated negative binomial regression models.
 #'
 #' @param x \link{itnb-object}.
 #' @param which Integer (> 0):
@@ -942,7 +936,6 @@ coef.itnb <- function(object, ...) {
 #' @return An invisible \code{NULL}.
 #'
 #' @method plot itnb
-#' @rdname plot
 #'
 #' @export
 plot.itnb <- function(x, which, ...) {

@@ -16,7 +16,6 @@
 #'
 #' @example inst/examples/simulation_itnb_example.R
 #'
-#' @rdname confint
 #' @method confint itnb
 #'
 #' @return If \code{level = NULL} a matrix with bootstrap simulations, otherwise a matrix of lower and upper confidence limits for each parameter.
@@ -217,8 +216,8 @@ lrtest <- function(object, type = "overdispersion", level = 0.05, ...) {
 #'
 #' @return An \link{lrtest.itnb-object}.
 #'
-#' @rdname lrtest
 #' @method lrtest itnb
+#' @rdname lrtest
 #'
 #' @export
 lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
@@ -372,10 +371,10 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
             ##
             #
-            loglike_ob <- itnb_matrix(X = X, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
-            loglike_rb <- itnb_matrix(X = X, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
+            loglike_ob <- itnb:::itnb_matrix(X = X, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
+            loglike_rb <- itnb:::itnb_matrix(X = X, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
 
-            d_boot[b] <- -2.0 * (loglike_rb - loglike_ob)
+            d_boot[b] <- 2.0 * abs(loglike_ob - loglike_rb)
         }
 
         ##
@@ -416,20 +415,22 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 #' @return An invisible \code{NULL}.
 #'
 #' @method print lrtest.itnb
-#' @rdname print
 #'
 #' @export
 print.lrtest.itnb <- function(x, ...) {
     dots <- list(...)
-    if (!("digits" %in% dots)) {
-        dots[["digits"]] <- max(3, getOption("digits") - 3)
+    if (is.null(dots[["digits"]])) {
+        digits <- max(3, getOption("digits") - 2)
+    }
+    else {
+        digits <- dots[["digits"]]
     }
 
     cat("\n")
 
     ##
     #
-    if (x[["type"]] %in% c("overdisperion")) {
+    if (x[["type"]] %in% c("overdispersion")) {
         cat("Likelihood ratio test of H0: alpha = 0\n")
     }
 
@@ -445,38 +446,122 @@ print.lrtest.itnb <- function(x, ...) {
         cat("Likelihood ratio test of H0: alpha = 0 and p = 0\n")
     }
 
-    cat(" ", paste0("Critical value (level = ", round(x[["level"]], dots[["digits"]]), "): "), round(x[["critval"]], dots[["digits"]]), "\n")
-    cat(" ", "Test statistic: ", round(x[["lr"]], dots[["digits"]]), "\n")
-    cat(" ", "P-value:", format.pval(x[["pval"]], digits = dots[["digits"]]), "\n")
+    cat(" ", paste0("Critical value (level = ", round(x[["level"]], digits = digits), "): "), round(x[["critval"]], digits = digits), "\n")
+    cat(" ", "Test statistic: ", round(x[["lr"]], digits = digits), "\n")
+    cat(" ", "P-value:", format.pval(x[["pval"]], digits = digits), "\n")
     cat("\n")
 
     if (!all(is.na(x[["bootstrap"]]))) {
-        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples => p-value lower bound of", paste0(format(1 / (x[["bootstrap"]][["B"]] + 1), digits = dots[["digits"]]), ")."), "\n")
+        cat("(Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples => p-value lower bound of", paste0(format(1 / (x[["bootstrap"]][["B"]] + 1), digits = digits), ")."), "\n")
         cat("\n")
     }
 
     return(invisible(NULL))
 }
 
-#' @title Histogram
+#' @title Likelihood Ratio Histogram
 #'
-#' @description ...
+#' @description Histogram of the likelihood ratio sample distribution found by parametric bootstrap.
 #'
 #' @param x \link{lrtest.itnb-object}.
-#' @param ... Additional arguments (see details).
-#'
-#' @details ...
+#' @param ... Additional arguments (see \link{hist}).
 #'
 #' @return An invisible \code{NULL}.
 #'
 #' @method hist lrtest.itnb
-#' @rdname hist
 #'
 #' @export
 hist.lrtest.itnb <- function(x, ...) {
-    oldpar <- par(no.readonly = TRUE)
-    on.exit(par(oldpar))
+    #
+    dots <- list(...)
 
+    #
+    if (all(is.na(x[["bootstrap"]]))) {
+        stop("'lrtest' has to be run with argument 'bootstrap = TRUE'.")
+    }
+
+    #
+    if (is.null(dots[["xlog"]])) {
+        dots[["xlog"]] <- FALSE
+    }
+
+    #
+    dots[["x"]] <- x$bootstrap$lr
+    critval <- x$critval
+    lr <- x$lr
+
+    if (dots[["xlog"]]) {
+        dots[["x"]] <- log(dots[["x"]])
+        critval <- log(critval)
+        lr <- log(lr)
+    }
+
+    #
+    if (is.null(dots[["prob"]])) {
+        dots[["prob"]] <- TRUE
+    }
+
+    #
+    if (is.null(dots[["xlab"]])) {
+        dots[["xlab"]] <- paste("Likelihood ratio")
+        if (dots[["xlog"]]) {
+            dots[["xlab"]] <- paste0("log(", dots[["xlab"]], ")")
+        }
+    }
+
+    #
+    if (is.null(dots[["ylab"]])) {
+        dots[["ylab"]] <- ifelse(dots[["prob"]], "Density", "Frequency")
+    }
+
+    #
+    if (is.null(dots[["col"]])) {
+        dots[["col"]] <- rgb(28 / 256, 134 / 256, 238 / 256, 0.6)
+    }
+
+    #
+    if (is.null(dots[["main"]])) {
+        dots[["main"]] <- paste("Likelihood ratio sample distribution \n (Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples)")
+    }
+
+    #
+    if (is.null(dots[["breaks"]])) {
+        dots[["breaks"]] <- "fd"
+    }
+
+    #
+    if (is.null(dots[["xlim"]])) {
+        dots[["xlim"]] <- c(0, max(c(quantile(dots[["x"]], probs = 1 - x$level), critval, lr)) + 1)
+        if (dots[["xlog"]]) {
+            dots[["xlim"]] <- c(min(dots[["x"]]) - 1, max(dots[["x"]]) + 1)
+        }
+    }
+
+    #
+    do.call(hist, dots)
+    abline(v = critval, col = "black", lwd = 2)
+    abline(v = lr, col = "red", lwd = 2)
+
+    #
     return(invisible(NULL))
 }
 
+#' @title Likelihood Ratio Plot
+#'
+#' @description Plot of the likelihood ratio sample distribution found by parametric bootstrap.
+#'
+#' @param x \link{lrtest.itnb-object}.
+#' @param ... Additional arguments (see \link{plot}).
+#'
+#' @return An invisible \code{NULL}.
+#'
+#' @method plot lrtest.itnb
+#'
+#' @export
+plot.lrtest.itnb <- function(x, ...) {
+    #
+    dots <- list(...)
+
+    #
+    return(invisible(NULL))
+}
