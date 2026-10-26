@@ -38,7 +38,7 @@ data <- data.frame(y = y, x = x)
 ## Estimating parameters
 m <- itnb(
     y ~ x, 
-    data = data,
+    data = data,28, 134, 238
     i = i,
     t = t,
     link = "log"
@@ -50,6 +50,7 @@ summary(m)
 (lr <- lrtest(m, B = 1999, type = "overdispersion"))
 hist(lr, xlog = TRUE)
 ```
+<img width="1049" height="642" alt="Rplot" src="https://github.com/user-attachments/assets/7cf0435b-9a43-4ba0-918a-dce52ab0da14" />
 
 ## License
 This project is licensed under the MIT License.
