@@ -13,6 +13,14 @@ em_itpois_cpp <- function(X, y, yi, beta_0, p_0, i, t, link, iteration_min, iter
     .Call('_itnb_em_itpois_cpp', PACKAGE = 'itnb', X, y, yi, beta_0, p_0, i, t, link, iteration_min, iteration_max, tolerance, steps, exact, trace, save_trace)
 }
 
+mle_itnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace) {
+    .Call('_itnb_mle_itnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace)
+}
+
+mle_itpois_cpp <- function(X, y, beta_0, p_0, i, t, link, tolerance, steps, exact, trace) {
+    .Call('_itnb_mle_itpois_cpp', PACKAGE = 'itnb', X, y, beta_0, p_0, i, t, link, tolerance, steps, exact, trace)
+}
+
 mle_tnb_cpp <- function(X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace) {
     .Call('_itnb_mle_tnb_cpp', PACKAGE = 'itnb', X, y, beta_0, theta_0, p_0, i, t, link, tolerance, steps, exact, trace)
 }

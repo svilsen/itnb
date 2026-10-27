@@ -293,7 +293,7 @@ Rcpp::List em_itnb_cpp(
     }
 
     //
-    arma::mat approx_hessian = arma::mat(beta_j.size() + 1, beta_j.size() + 1);
+    arma::mat approx_hessian = arma::mat(beta_j.size() + 2, beta_j.size() + 2);
 
     //
     optimise_itnb(
@@ -320,7 +320,7 @@ Rcpp::List em_itnb_cpp(
     }
 
     // HOT FIX
-    approx_hessian += 1e-8 * arma::eye(beta_j.size() + 1, beta_j.size() + 1);
+    approx_hessian += 1e-8 * arma::eye(beta_j.size() + 2, beta_j.size() + 2);
 
     //
     arma::mat vcov = arma::inv(approx_hessian);

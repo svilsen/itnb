@@ -41,7 +41,8 @@ m <- itnb(
     data = data,
     i = i,
     t = t,
-    link = "log"
+    link = "log",
+    control = list(method = "mle")
 )
 
 summary(m)

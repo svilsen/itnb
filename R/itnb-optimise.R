@@ -32,8 +32,8 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
     }
     method <- tolower(method)
 
-    if (!(method %in% c("em", "expectation-maximisation", "expectation-maximization"))) {
-        stop("'method' has be set to 'em' -- this option is included for future proofing, and should not be used at present.")
+    if (!(method %in% c("em", "expectation-maximisation", "expectation-maximization", "mle", "maximum-likelihood"))) {
+        stop("'method' has be set to 'em' or 'mle'.")
     }
 
     ##
@@ -205,15 +205,27 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             res[["trace"]] <- NA
         }
         else if ((t < 0) | (i > t)) {
-            res <- em_itnb_cpp(
-                X = X, y = y, yi = yi,
-                beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
-                i = i, t = t, link = link,
-                iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
-                tolerance = control[["tolerance"]],
-                steps = control[["steps"]], exact = control[["exact"]],
-                trace = control[["trace"]], save_trace = control[["save_trace"]]
-            ) |> suppressWarnings()
+            if (control[["method"]] == "em") {
+                res <- em_itnb_cpp(
+                    X = X, y = y, yi = yi,
+                    beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
+                    i = i, t = t, link = link,
+                    iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+                    tolerance = control[["tolerance"]],
+                    steps = control[["steps"]], exact = control[["exact"]],
+                    trace = control[["trace"]], save_trace = control[["save_trace"]]
+                ) |> suppressWarnings()
+            }
+            else {
+                res <- mle_itnb_cpp(
+                    X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                    beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
+                    i = i, t = t, link = link,
+                    tolerance = control[["tolerance"]],
+                    steps = control[["steps"]], exact = control[["exact"]],
+                    trace = control[["trace"]]
+                ) |> suppressWarnings()
+            }
         }
         else {
             stop("How did we get here? Report with code 'itnb-opt'.")
@@ -237,15 +249,29 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             res[["trace"]] <- NA
         }
         else if ((t < 0) | (i > t)) {
-            res <- em_itpois_cpp(
-                X = X, y = y, yi = yi,
-                beta_0 = beta, p_0 = p,
-                i = i, t = t, link = link,
-                iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
-                tolerance = control[["tolerance"]],
-                steps = control[["steps"]], exact = control[["exact"]],
-                trace = control[["trace"]], save_trace = control[["save_trace"]]
-            ) |> suppressWarnings()
+            if (control[["method"]] == "em") {
+                res <- em_itpois_cpp(
+                    X = X, y = y, yi = yi,
+                    beta_0 = beta, p_0 = p,
+                    i = i, t = t, link = link,
+                    iteration_min = control[["iteration_min"]], iteration_max = control[["iteration_max"]],
+                    tolerance = control[["tolerance"]],
+                    steps = control[["steps"]], exact = control[["exact"]],
+                    trace = control[["trace"]], save_trace = control[["save_trace"]]
+                ) |> suppressWarnings()
+            }
+            else {
+                res <- mle_itpois_cpp(
+                    X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                    beta_0 = beta, p_0 = p,
+                    i = i, t = t, link = link,
+                    tolerance = control[["tolerance"]],
+                    steps = control[["steps"]], exact = control[["exact"]],
+                    trace = control[["trace"]]
+                ) |> suppressWarnings()
+            }
+
+
         }
         else {
             stop("How did we get here? Report with code 'itpois-opt'.")
