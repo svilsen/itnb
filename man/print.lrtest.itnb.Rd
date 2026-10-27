@@ -2,7 +2,7 @@
 % Please edit documentation in R/itnb-bootstrap.R
 \name{print.lrtest.itnb}
 \alias{print.lrtest.itnb}
-\title{Print LR-test}
+\title{Print Likelihood Ratio Test}
 \usage{
 \method{print}{lrtest.itnb}(x, ...)
 }

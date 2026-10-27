@@ -372,8 +372,8 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
             ##
             #
-            loglike_ob <- itnb:::itnb_matrix(X = X, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
-            loglike_rb <- itnb:::itnb_matrix(X = X, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
+            loglike_ob <- itnb_matrix(X = X, y = y_b, i = i, t = t, link = link, control = control)[["loglikelihood"]]
+            loglike_rb <- itnb_matrix(X = X, y = y_b, i = i_r, t = t, link = link, control = control_r)[["loglikelihood"]]
 
             d_boot[b] <- 2.0 * abs(loglike_ob - loglike_rb)
         }
@@ -474,6 +474,10 @@ print.lrtest.itnb <- function(x, ...) {
 #' @export
 hist.lrtest.itnb <- function(x, ...) {
     #
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+
+    #
     dots <- list(...)
 
     #
@@ -531,17 +535,76 @@ hist.lrtest.itnb <- function(x, ...) {
     }
 
     #
+    if (is.null(dots[["probs"]])) {
+        probs <- 0.975
+    }
+    else {
+        probs <- dots[["probs"]]
+        dots[["probs"]] <- NULL
+    }
+
+    #
     if (is.null(dots[["xlim"]])) {
-        dots[["xlim"]] <- c(0, max(c(quantile(dots[["x"]], probs = 1 - x$level), critval, lr)) + 1)
+        dots[["xlim"]] <- c(0, max(c(quantile(dots[["x"]], probs = probs), critval, lr)) + 1)
         if (dots[["xlog"]]) {
             dots[["xlim"]] <- c(min(dots[["x"]]) - 1, max(dots[["x"]]) + 1)
         }
     }
 
     #
+    if (is.null(dots[["position"]])) {
+        position <- "topright"
+    }
+    else {
+        position <- dots[["position"]]
+        dots[["position"]] <- NULL
+    }
+
+    #
+    if (is.null(dots[["base"]])) {
+        base <- FALSE
+    }
+    else {
+        base <- dots[["base"]]
+        dots[["base"]] <- NULL
+    }
+
+    #
+    if (!base) {
+        par(
+            pty = "m",
+            bg = "white",
+            fg = "black",
+            col.axis = "black",
+            col.lab = "black",
+            bty = "l",
+            las = 1,
+            xpd = FALSE
+        )
+    }
+
     do.call(hist, dots)
     abline(v = critval, col = "black", lwd = 2)
     abline(v = lr, col = "red", lwd = 2)
+
+    #
+    if (!base) {
+        box(col = "grey90", bty = "o")
+        box(col = "black", bty = "l")
+    }
+
+    legend(
+        position,
+        inset = 0.02,
+        legend = c("Critical value", "Observed value"),
+        lty = 1,
+        lwd = 2,
+        col = c("black", "red"),
+        pt.bg = c("white", "white"),
+        bty = "o",
+        box.col = "grey90",
+        bg = "white"
+    )
 
     #
     return(invisible(NULL))
@@ -560,6 +623,9 @@ hist.lrtest.itnb <- function(x, ...) {
 #'
 #' @export
 plot.lrtest.itnb <- function(x, ...) {
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+
     #
     dots <- list(...)
 
@@ -587,10 +653,6 @@ plot.lrtest.itnb <- function(x, ...) {
         m <- max(x$critval, x$lr) + 1
         dots[["x"]] <- seq(0, m, length.out = 10 * m)
         dots[["y"]] <- dchisq(dots[["x"]], df = x$df)
-
-        do.call(plot, dots)
-        abline(v = x$critval, col = "black", lwd = 2)
-        abline(v = x$lr, col = "red", lwd = 2)
     }
     else {
         if (is.null(dots[["main"]])) {
@@ -613,17 +675,84 @@ plot.lrtest.itnb <- function(x, ...) {
             dots[["kernel"]] <- NULL
         }
 
-        m <- max(c(x$critval, x$lr, quantile(x$bootstrap$lr, probs = 0.975))) + 1
+        if (is.null(dots[["digits"]])) {
+            digits <- 5
+        }
+        else {
+            digits <- dots[["digits"]]
+            dots[["digits"]] <- NULL
+        }
+
+        if (is.null(dots[["probs"]])) {
+            probs <- 0.975
+        }
+        else {
+            probs <- dots[["probs"]]
+            dots[["probs"]] <- NULL
+        }
+
+        m <- max(c(x$critval, x$lr, quantile(x$bootstrap$lr, probs = probs))) + 1
         d <- density(x$bootstrap$lr, from = 0, to = m, bw = bw, kernel = kernel)
 
-        dots[["xlab"]] <- paste0(dots[["xlab"]], "\n Band-width: ", round(d$bw, 5))
+        dots[["xlab"]] <- paste0(dots[["xlab"]], "\n Band-width: ", round(d$bw, digits))
         dots[["x"]] <- d$x
         dots[["y"]] <- d$y
-
-        do.call(plot, dots)
-        abline(v = x$critval, col = "black", lwd = 2)
-        abline(v = x$lr, col = "red", lwd = 2)
     }
+
+    #
+    if (is.null(dots[["position"]])) {
+        position <- "topright"
+    }
+    else {
+        position <- dots[["position"]]
+        dots[["position"]] <- NULL
+    }
+
+    #
+    if (is.null(dots[["base"]])) {
+        base <- FALSE
+    }
+    else {
+        base <- dots[["base"]]
+        dots[["base"]] <- NULL
+    }
+
+    #
+    if (!base) {
+        par(
+            pty = "m",
+            bg = "white",
+            fg = "black",
+            col.axis = "black",
+            col.lab = "black",
+            bty = "l",
+            las = 1,
+            xpd = FALSE
+        )
+    }
+
+    do.call(plot, dots)
+    abline(v = x$critval, col = "black", lwd = 2)
+    abline(v = x$lr, col = "red", lwd = 2)
+
+    #
+    if (!base) {
+        box(col = "grey90", bty = "o")
+        box(col = "black", bty = "l")
+    }
+
+    legend(
+        position,
+        inset = 0.02,
+        legend = c("Critical value", "Observed value"),
+        lty = 1,
+        lwd = 2,
+        col = c("black", "red"),
+        pt.bg = c("white", "white"),
+        bty = "o",
+        box.col = "grey90",
+        bg = "white"
+    )
 
     #
     return(invisible(NULL))
