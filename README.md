@@ -38,7 +38,7 @@ data <- data.frame(y = y, x = x)
 ## Estimating parameters
 m <- itnb(
     y ~ x, 
-    data = data,28, 134, 238
+    data = data,
     i = i,
     t = t,
     link = "log"
@@ -47,7 +47,7 @@ m <- itnb(
 summary(m)
 
 ## Likelihood ratio test
-lr <- lrtest(m, B = 1999, type = "overdispersion")
+lr <- lrtest(m, B = 199, type = "overdispersion")
 hist(lr, xlog = TRUE)
 ```
 <img width="1049" height="642" alt="Rplot" src="https://github.com/user-attachments/assets/7cf0435b-9a43-4ba0-918a-dce52ab0da14" />

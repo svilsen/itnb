@@ -299,25 +299,6 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
 
     link <- object[["link"]]
 
-    #
-    beta <- object[["beta"]]
-    if (parametric) {
-        mu <- X %*% beta
-
-        if (link == "sqrt") {
-            mu <- mu * mu
-        }
-        else if (link == "log") {
-            mu <- exp(mu)
-        }
-        else if (link == "reciprocal") {
-            mu <- 1 / mu
-        }
-    }
-
-    #
-    p <- object[["p"]]
-
     ##
     #
     control_r <- control
@@ -356,6 +337,26 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     ##
     #
     if (bootstrap) {
+        ##
+        #
+        beta <- object[["beta"]]
+        if (parametric) {
+            mu <- X %*% beta
+
+            if (link == "sqrt") {
+                mu <- mu * mu
+            }
+            else if (link == "log") {
+                mu <- exp(mu)
+            }
+            else if (link == "reciprocal") {
+                mu <- 1 / mu
+            }
+        }
+
+        #
+        p <- object[["p"]]
+
         ##
         #
         d_boot <- rep(NA, B)
@@ -403,7 +404,7 @@ lrtest.itnb <- function(object, type = "overdispersion", level = 0.05, ...) {
     return(res)
 }
 
-#' @title Print LR-test
+#' @title Print Likelihood Ratio Test
 #'
 #' @description Print a \link{lrtest.itnb-object}, i.e., the likelihood ratio test results of an \link{itnb-object}.
 #'
@@ -548,7 +549,7 @@ hist.lrtest.itnb <- function(x, ...) {
 
 #' @title Likelihood Ratio Plot
 #'
-#' @description Plot of the likelihood ratio sample distribution found by parametric bootstrap.
+#' @description Plot of the likelihood ratio sample distribution based on either the asymptotic Chi-squared distribution or bootstrap distribution.
 #'
 #' @param x \link{lrtest.itnb-object}.
 #' @param ... Additional arguments (see \link{plot}).
@@ -561,6 +562,68 @@ hist.lrtest.itnb <- function(x, ...) {
 plot.lrtest.itnb <- function(x, ...) {
     #
     dots <- list(...)
+
+    #
+    if (is.null(dots[["xlab"]])) {
+        dots[["xlab"]] <- paste("Likelihood ratio")
+    }
+
+    #
+    if (is.null(dots[["ylab"]])) {
+        dots[["ylab"]] <- "Density"
+    }
+
+    #
+    if (is.null(dots[["type"]])) {
+        dots[["type"]] <- "l"
+    }
+
+    #
+    if (all(is.na(x[["bootstrap"]]))) {    #
+        if (is.null(dots[["main"]])) {
+            dots[["main"]] <- paste("Likelihood ratio sample distribution \n (Based on Chi-squared distribution with", x$df, "degree(s)-of-freedom)")
+        }
+
+        m <- max(x$critval, x$lr) + 1
+        dots[["x"]] <- seq(0, m, length.out = 10 * m)
+        dots[["y"]] <- dchisq(dots[["x"]], df = x$df)
+
+        do.call(plot, dots)
+        abline(v = x$critval, col = "black", lwd = 2)
+        abline(v = x$lr, col = "red", lwd = 2)
+    }
+    else {
+        if (is.null(dots[["main"]])) {
+            dots[["main"]] <- paste("Likelihood ratio sample distribution \n (Based on", x[["bootstrap"]][["B"]], ifelse(x[["bootstrap"]][["parametric"]], "parametric", "non-parametric"), "bootstrap samples)")
+        }
+
+        if (is.null(dots[["bw"]])) {
+            bw <- "nrd0"
+        }
+        else {
+            bw <- dots[["bw"]]
+            dots[["bw"]] <- NULL
+        }
+
+        if (is.null(dots[["kernel"]])) {
+            kernel <- "gaussian"
+        }
+        else {
+            kernel <- dots[["kernel"]]
+            dots[["kernel"]] <- NULL
+        }
+
+        m <- max(c(x$critval, x$lr, quantile(x$bootstrap$lr, probs = 0.975))) + 1
+        d <- density(x$bootstrap$lr, from = 0, to = m, bw = bw, kernel = kernel)
+
+        dots[["xlab"]] <- paste0(dots[["xlab"]], "\n Band-width: ", round(d$bw, 5))
+        dots[["x"]] <- d$x
+        dots[["y"]] <- d$y
+
+        do.call(plot, dots)
+        abline(v = x$critval, col = "black", lwd = 2)
+        abline(v = x$lr, col = "red", lwd = 2)
+    }
 
     #
     return(invisible(NULL))

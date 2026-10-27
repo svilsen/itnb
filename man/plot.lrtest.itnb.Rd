@@ -15,5 +15,5 @@
 An invisible \code{NULL}.
 }
 \description{
-Plot of the likelihood ratio sample distribution found by parametric bootstrap.
+Plot of the likelihood ratio sample distribution based on either the asymptotic Chi-squared distribution or bootstrap distribution.
 }
