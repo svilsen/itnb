@@ -47,10 +47,9 @@ m <- itnb(
 summary(m)
 
 ## Likelihood ratio test
-lr <- lrtest(m, B = 199, type = "overdispersion")
-hist(lr, xlog = TRUE)
+lr <- lrtest(m, type = "overdispersion")
+hist(lr)
 ```
-<img width="1049" height="642" alt="Rplot" src="https://github.com/user-attachments/assets/7cf0435b-9a43-4ba0-918a-dce52ab0da14" />
 
 ## License
 This project is licensed under the MIT License.
