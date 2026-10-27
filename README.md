@@ -50,6 +50,7 @@ summary(m)
 lr <- lrtest(m, type = "overdispersion")
 hist(lr)
 ```
+<img width="1035" height="326" alt="Rplot" src="https://github.com/user-attachments/assets/9b837337-416c-4548-bdb5-0dc3fab8969a" />
 
 ## License
 This project is licensed under the MIT License.
