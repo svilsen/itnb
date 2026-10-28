@@ -9,11 +9,14 @@
 \arguments{
 \item{x}{\link{itnb-object}.}
 
-\item{...}{Additional arguments (not used in the current implementation).}
+\item{...}{Additional arguments (see details).}
 }
 \value{
 An invisible \code{NULL}.
 }
 \description{
 Diagnostic plots for inflated and truncated negative binomial regression models.
+}
+\details{
+The additional argument is \code{type}, which can be \code{"fit"} or \code{"trace"}. The first shows the diagnostics plots of the fitted model object (similar to \link{plot.lm} does for \link{glm}-objects), while the second shows the trace of the log-likelihood when the model is optimised using the EM-algorithm.
 }

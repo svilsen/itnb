@@ -1003,14 +1003,12 @@ plot.itnb <- function(x, ...) {
     if (type == "fit") {
         ##
         #
-        N <- length(r)
-
-        #
         r <- residuals(x, type = "deviance")
         mr <- mean(r)
         sr <- sd(r)
 
         #
+        N <- length(r)
         f <- predict(x, type = "link")
 
         #
