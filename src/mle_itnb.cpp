@@ -11,10 +11,10 @@
 using namespace roptim;
 
 //// Truncated negative binomial parameters
-class MLE_NB : public Functor {
+class MLE_ITNB : public Functor {
 public:
     // Constructor
-    MLE_NB(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    MLE_ITNB(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -31,7 +31,8 @@ public:
             const double & eta_n = arma::dot(x_n, beta);
             const double & mu_n = LO.link_inv(eta_n);
 
-            d -= (1.0 - p) * ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
+            //
+            d -= ditnb_cpp(y[n], mu_n, theta, p, i, t);
         }
 
         if (std::isinf(d) || std::isnan(d)) {
@@ -57,15 +58,18 @@ public:
                 const double mu_n = LO.link_inv(eta_n[0]);
 
                 //
+                const double y_n = y[n];
+                const double f_n = ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
+
+                //
                 const double & mu_theta = mu_n + theta;
                 const double & mu_theta_i = 1.0 / mu_theta;
 
-                const double & y_theta = y[n] + theta;
+                const double & y_theta = y_n + theta;
 
                 //
-                double gr_beta = (p - 1.0) * (y[n] / mu_n - y_theta * mu_theta_i);
-                double gr_theta = (p - 1.0) * (1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
-                double gr_p = ditnb_cpp(y[n], mu_n, theta, 0.0, i, t);
+                double gr_beta = -(y_n / mu_n - y_theta * mu_theta_i);
+                double gr_theta = -(1.0 + std::log(theta) - std::log(mu_theta) - y_theta * mu_theta_i + R::digamma(y_theta) - R::digamma(theta));
 
                 if (t > -1) {
                     //
@@ -84,6 +88,21 @@ public:
 
                     const double & I_theta = (b_t_i - b_t_f) / b - b_t_d;
                     gr_theta += (I_theta);
+                }
+
+
+                double gr_p;
+                if (y_n == i) {
+                    const double numerator = std::exp(f_n);
+                    const double denominator = p + (1.0 - p) * std::exp(f_n);
+
+                    gr_beta *= ((1.0 - p) * numerator / denominator);
+                    gr_theta *= ((1.0 - p) * numerator / denominator);
+
+                    gr_p = (numerator - 1.0) / denominator;
+                }
+                else {
+                    gr_p = 1.0 / (1.0 - p);
                 }
 
                 //
@@ -152,8 +171,8 @@ void optimise_itnb(
     pars_j[M + 1] = std::log(p_j / (1 - p_j));
 
     //
-    Roptim<MLE_NB> opt("L-BFGS-B");
-    MLE_NB log_likelihood(X, y, i, t, steps, exact, LO);
+    Roptim<MLE_ITNB> opt("L-BFGS-B");
+    MLE_ITNB log_likelihood(X, y, i, t, steps, exact, LO);
 
     opt.control.trace = trace;
 
@@ -164,7 +183,7 @@ void optimise_itnb(
     //
     beta_j = pars_j.head(M);
     theta_j = std::exp(pars_j[M]);
-    p_j = 1.0 / (1 + std::exp(-pars_j[M + 1]));
+    p_j = 1.0 / (1.0 + std::exp(-pars_j[M + 1]));
 
     //
     loglike_j = opt.value();
@@ -195,12 +214,6 @@ Rcpp::List mle_itnb_cpp(
     arma::vec beta_j = beta_0;
     double theta_j = theta_0;
     double p_j = p_0;
-    if (p_j < 1e-12) {
-        p_j = 1e-12;
-    }
-    else if (p_j > (1.0 - 1e-12)) {
-        p_j = 1.0 - 1e-12;
-    }
 
     //
     double loglike_j = 0.0;

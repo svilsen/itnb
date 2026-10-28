@@ -11,13 +11,13 @@
 using namespace roptim;
 
 // Truncated negative binomial parameters
-class EM_POIS : public Functor {
+class EM_ITPOIS : public Functor {
 public:
     // Parameters
     arma::vec z;
 
     // Constructor
-    EM_POIS(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    EM_ITPOIS(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         z(z_), X(X_), y(y_), yi(yi_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -134,8 +134,8 @@ void optimise_itpois(
     pars_j = beta_j;
 
     //
-    Roptim<EM_POIS> opt("L-BFGS-B");
-    EM_POIS log_likelihood(X, y, yi, z, i, t, steps, exact, LO);
+    Roptim<EM_ITPOIS> opt("L-BFGS-B");
+    EM_ITPOIS log_likelihood(X, y, yi, z, i, t, steps, exact, LO);
 
     //
     loglike_j = opt.value();

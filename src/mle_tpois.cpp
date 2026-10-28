@@ -11,10 +11,10 @@
 using namespace roptim;
 
 //// Truncated negative binomial parameters
-class MLE_POIS : public Functor {
+class MLE_TPOIS : public Functor {
 public:
     // Constructor
-    MLE_POIS(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    MLE_TPOIS(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -121,8 +121,8 @@ void optimise_tpois(
     pars_j = beta_j;
 
     //
-    Roptim<MLE_POIS> opt("L-BFGS-B");
-    MLE_POIS log_likelihood(X, y, i, t, steps, exact, LO);
+    Roptim<MLE_TPOIS> opt("L-BFGS-B");
+    MLE_TPOIS log_likelihood(X, y, i, t, steps, exact, LO);
 
     opt.control.trace = trace;
 

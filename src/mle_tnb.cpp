@@ -11,10 +11,10 @@
 using namespace roptim;
 
 //// Truncated negative binomial parameters
-class MLE_NB : public Functor {
+class MLE_TNB : public Functor {
 public:
     // Constructor
-    MLE_NB(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    MLE_TNB(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -144,8 +144,8 @@ void optimise_tnb(
     pars_j[M] = std::log(theta_j);
 
     //
-    Roptim<MLE_NB> opt("L-BFGS-B");
-    MLE_NB log_likelihood(X, y, i, t, steps, exact, LO);
+    Roptim<MLE_TNB> opt("L-BFGS-B");
+    MLE_TNB log_likelihood(X, y, i, t, steps, exact, LO);
 
     opt.control.trace = trace;
 

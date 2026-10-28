@@ -11,13 +11,13 @@
 using namespace roptim;
 
 // Truncated negative binomial parameters
-class EM_NB : public Functor {
+class EM_ITNB : public Functor {
 public:
     // Parameters
     arma::vec z;
 
     // Constructor
-    EM_NB(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    EM_ITNB(const arma::mat & X_, const arma::vec & y_, const arma::vec & yi_, const arma::vec & z_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         z(z_), X(X_), y(y_), yi(yi_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -157,8 +157,8 @@ void optimise_itnb(
     pars_j[M] = std::log(theta_j);
 
     //
-    Roptim<EM_NB> opt("L-BFGS-B");
-    EM_NB log_likelihood(X, y, yi, z, i, t, steps, exact, LO);
+    Roptim<EM_ITNB> opt("L-BFGS-B");
+    EM_ITNB log_likelihood(X, y, yi, z, i, t, steps, exact, LO);
 
     //
     loglike_j = opt.value();
@@ -293,7 +293,7 @@ Rcpp::List em_itnb_cpp(
     }
 
     //
-    arma::mat approx_hessian = arma::mat(beta_j.size() + 2, beta_j.size() + 2);
+    arma::mat approx_hessian = arma::mat(beta_j.size() + 1, beta_j.size() + 1);
 
     //
     optimise_itnb(
@@ -320,7 +320,7 @@ Rcpp::List em_itnb_cpp(
     }
 
     // HOT FIX
-    approx_hessian += 1e-8 * arma::eye(beta_j.size() + 2, beta_j.size() + 2);
+    approx_hessian += 1e-8 * arma::eye(beta_j.size() + 1, beta_j.size() + 1);
 
     //
     arma::mat vcov = arma::inv(approx_hessian);

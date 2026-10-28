@@ -11,10 +11,10 @@
 using namespace roptim;
 
 //// Truncated negative binomial parameters
-class MLE_POIS : public Functor {
+class MLE_ITPOIS : public Functor {
 public:
     // Constructor
-    MLE_POIS(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
+    MLE_ITPOIS(const arma::mat & X_, const arma::vec & y_, const int & i_, const int & t_, const int & steps_, const bool & exact_, Link & LO_) :
         X(X_), y(y_), N(y.size()), M(X.n_cols), i(i_), t(t_), steps(steps_), exact(exact_), LO(LO_) { }
 
     // Functor / objective function
@@ -30,7 +30,7 @@ public:
             const double & eta_n = arma::dot(x_n, beta);
             const double & mu_n = LO.link_inv(eta_n);
 
-            d -= (1.0 - p) * ditpois_cpp(y[n], mu_n, 0.0, i, t);
+            d -= ditpois_cpp(y[n], mu_n, p, i, t);
         }
 
         if (std::isinf(d) || std::isnan(d)) {
@@ -43,7 +43,7 @@ public:
     // Gradient function
     void Gradient(const arma::vec & par, arma::vec & gr) override {
         //
-        gr = arma::zeros(M);
+        gr = arma::zeros(M + 1);
         if (exact) {
             const arma::vec & beta = par.head(M);
             const double & p = 1.0 / (1.0 + std::exp(-par[M]));
@@ -55,8 +55,11 @@ public:
                 const double mu_n = LO.link_inv(eta_n);
 
                 //
-                double gr_beta = -(y[n] / mu_n - 1.0);
-                double gr_p = ditpois_cpp(y[n], mu_n, 0.0, i, t);
+                const double y_n = y[n];
+                const double f_n = ditpois_cpp(y_n, mu_n, 0.0, i, t);
+
+                //
+                double gr_beta = -(y_n / mu_n - 1.0);
                 if (t > -1) {
                     //
                     const double & b = R::ppois(t, mu_n, 0, 0);
@@ -68,13 +71,27 @@ public:
                 }
 
                 //
+                double gr_p;
+                if (y_n == i) {
+                    const double numerator = std::exp(f_n);
+                    const double denominator = p + (1.0 - p) * std::exp(f_n);
+
+                    gr_beta *= ((1.0 - p) * numerator / denominator);
+                    gr_p = (numerator - 1.0) / denominator;
+                }
+                else {
+                    gr_p = 1.0 / (1.0 - p);
+                }
+
+
+                //
                 for (int m = 0; m < M; m++) {
                     const double & gr_mu = LO.link_inv_dev(mu_n, x_n, m);
                     gr[m] += gr_beta * gr_mu;
                 }
 
                 //
-                gr[M] = gr_p * p * (1.0 - p);
+                gr[M] += gr_p * p * (1.0 - p);
             }
         }
         else{
@@ -129,8 +146,8 @@ void optimise_itpois(
     pars_j[M] = std::log(p_j / (1 - p_j));
 
     //
-    Roptim<MLE_POIS> opt("L-BFGS-B");
-    MLE_POIS log_likelihood(X, y, i, t, steps, exact, LO);
+    Roptim<MLE_ITPOIS> opt("L-BFGS-B");
+    MLE_ITPOIS log_likelihood(X, y, i, t, steps, exact, LO);
 
     opt.control.trace = trace;
 
@@ -140,7 +157,7 @@ void optimise_itpois(
 
     //
     beta_j = pars_j.head(M);
-    p_j = 1.0 / (1.0 + std::exp(-pars_j[M + 1]));
+    p_j = 1.0 / (1.0 + std::exp(-pars_j[M]));
 
     //
     loglike_j = opt.value();
@@ -170,12 +187,6 @@ Rcpp::List mle_itpois_cpp(
     //
     arma::vec beta_j = beta_0;
     double p_j = p_0;
-    if (p_j < 1e-12) {
-        p_j = 1e-12;
-    }
-    else if (p_j > (1.0 - 1e-12)) {
-        p_j = 1.0 - 1e-12;
-    }
 
     //
     double loglike_j = 0.0;

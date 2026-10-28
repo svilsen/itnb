@@ -19,14 +19,14 @@ strip_terms <- function(formula) {
 #' @param iteration_min Numeric (>= 0): The minimum number of allowed iterations.
 #' @param iteration_max Numeric (>= '\code{iteration_min}'): The maximum number of allowed iterations.
 #' @param steps Numeric (>= 0): The number of steps used when approximating the integral needed for the derivative of the overdispersion.
-#' @param exact TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference (default)?
+#' @param exact TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference?
 #' @param overdispersion TRUE/FALSE: Should an overdispersion parameter be estimated?
 #' @param save_data TRUE/FALSE: Should the data be stored in the return object?
 #' @param save_trace TRUE/FALSE: Should the trace be stored in the return object?
 #'
 #' @return A list of default arguments for the \link{itnb} function.
 #' @export
-itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_min = 2, iteration_max = 100, steps = 100, exact = FALSE, overdispersion = TRUE, save_data = TRUE, save_trace = TRUE) {
+itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_min = 2, iteration_max = 100, steps = 100, exact = NULL, overdispersion = TRUE, save_data = TRUE, save_trace = TRUE) {
     if (!is.character(method)) {
         stop("'method' has to be a string.")
     }
@@ -34,6 +34,12 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
 
     if (!(method %in% c("em", "expectation-maximisation", "expectation-maximization", "mle", "maximum-likelihood"))) {
         stop("'method' has be set to 'em' or 'mle'.")
+    }
+    else if (method %in% c("em", "expectation-maximisation", "expectation-maximization")) {
+        method = "em"
+    }
+    else if (method %in% c("mle", "maximum-likelihood")) {
+        method = "mle"
     }
 
     ##
@@ -77,6 +83,15 @@ itnb_control <- function(method = "em", trace = 0, tolerance = 1e-6, iteration_m
     steps <- ceiling(steps)
 
     ##
+    if (is.null(exact)) {
+        if (method == "em") {
+            exact = FALSE
+        }
+        else {
+            exact = TRUE
+        }
+    }
+
     if (!is.logical(exact)) {
         stop("'exact' has to be logical.")
     }
@@ -218,13 +233,16 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             }
             else {
                 res <- mle_itnb_cpp(
-                    X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                    X = X, y = y,
                     beta_0 = beta, theta_0 = 1 / alpha, p_0 = p,
                     i = i, t = t, link = link,
                     tolerance = control[["tolerance"]],
                     steps = control[["steps"]], exact = control[["exact"]],
                     trace = control[["trace"]]
                 ) |> suppressWarnings()
+
+                res[["iterations"]] <- NA
+                res[["trace"]] <- NA
             }
         }
         else {
@@ -262,16 +280,17 @@ itnb_matrix <- function(X, y, i, t, link, control = list()) {
             }
             else {
                 res <- mle_itpois_cpp(
-                    X = X[y != i, , drop = FALSE], y = y[y != i, , drop = FALSE],
+                    X = X, y = y,
                     beta_0 = beta, p_0 = p,
                     i = i, t = t, link = link,
                     tolerance = control[["tolerance"]],
                     steps = control[["steps"]], exact = control[["exact"]],
                     trace = control[["trace"]]
                 ) |> suppressWarnings()
+
+                res[["iterations"]] <- NA
+                res[["trace"]] <- NA
             }
-
-
         }
         else {
             stop("How did we get here? Report with code 'itpois-opt'.")
