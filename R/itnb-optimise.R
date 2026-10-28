@@ -512,11 +512,7 @@ predict.itnb <- function(object, ...) {
 #' @param object \link{itnb-object}.
 #' @param ... Additional arguments (see details).
 #'
-#' @details The additional arguments are:
-#' \describe{
-#'      \item{\code{newdata}}{\link{data.frame}: A data-set of covariates. NB: if set to '\code{NULL}' it will return the fitted values.}
-#'      \item{\code{type}}{String: Specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.}
-#' }
+#' @details The additional arguments is \code{type}: a string, specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.
 #'
 #' @return A vector of fitted values.
 #'
@@ -973,19 +969,54 @@ coef.itnb <- function(object, ...) {
 #' @description Diagnostic plots for inflated and truncated negative binomial regression models.
 #'
 #' @param x \link{itnb-object}.
-#' @param which Integer (> 0):
-#' @param ... Additional arguments (see details).
-#'
-#' @details ...
+#' @param ... Additional arguments (not used in the current implementation).
 #'
 #' @return An invisible \code{NULL}.
 #'
 #' @method plot itnb
 #'
 #' @export
-plot.itnb <- function(x, which, ...) {
+plot.itnb <- function(x, ...) {
     oldpar <- par(no.readonly = TRUE)
     on.exit(par(oldpar))
 
+    ##
+    #
+    N <- length(r)
+
+    #
+    r <- residuals(x, type = "deviance")
+    mr <- mean(r)
+    sr <- sd(r)
+
+    #
+    f <- predict(x, type = "link")
+
+    #
+    or <- sort(r)
+    p <- (seq_len(N) - 0.5) / N
+    tp <- qnorm(p, 0, 1)
+
+    #
+    qr_x <- qr(x$data$X)
+    hat_x <- rowSums(qr.Q(qr_x)^2)
+    leverage <- hat_x / (1 - hat_x)
+
+    k <- length(unlist(coef(x)))
+    ds <- (r^2 / k) * (hat_x / (1 - hat_x)^2)
+
+    ##
+    #
+    par(mfrow = c(2, 2))
+    plot(f, r, xlab = "Linear predictor", ylab = "Deviance residuals"); abline(h = 0, col = "dodgerblue2", lwd = 2)
+
+    plot(tp, or, xlab = "Quantiles of standard normal distribtion", ylab = "Ordered deviance residuals"); abline(mr - sr * mean(tp), sr, col = "dodgerblue2", lwd = 2)
+
+    plot(leverage, ds, xlab = "Leverage", ylab = "Cook's statistic", xlim = c(min(leverage, 3 * k / N - 1 / N), max(leverage, 3 * k / N + 1 / N)), ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(v = 3 * k / N, col = "dodgerblue2", lwd = 2); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+
+    plot(seq_len(N), ds, xlab = "Observation index", ylab = "Cook's statistic", ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+
+    ##
+    #
     return(invisible(NULL))
 }

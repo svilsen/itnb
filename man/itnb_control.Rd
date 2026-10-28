@@ -11,7 +11,7 @@ itnb_control(
   iteration_min = 2,
   iteration_max = 100,
   steps = 100,
-  exact = FALSE,
+  exact = NULL,
   overdispersion = TRUE,
   save_data = TRUE,
   save_trace = TRUE
@@ -30,7 +30,7 @@ itnb_control(
 
 \item{steps}{Numeric (>= 0): The number of steps used when approximating the integral needed for the derivative of the overdispersion.}
 
-\item{exact}{TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference (default)?}
+\item{exact}{TRUE/FALSE: Should parameter optimisation use the exact gradient or finite difference?}
 
 \item{overdispersion}{TRUE/FALSE: Should an overdispersion parameter be estimated?}
 

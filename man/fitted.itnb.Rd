@@ -18,9 +18,5 @@ A vector of fitted values.
 Fitted function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.
 }
 \details{
-The additional arguments are:
-\describe{
-     \item{\code{newdata}}{\link{data.frame}: A data-set of covariates. NB: if set to '\code{NULL}' it will return the fitted values.}
-     \item{\code{type}}{String: Specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.}
-}
+The additional arguments is \code{type}: a string, specifying the scale of the predicted/fitted values, either \code{"link"} or \code{"response"}.
 }

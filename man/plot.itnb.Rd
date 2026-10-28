@@ -4,21 +4,16 @@
 \alias{plot.itnb}
 \title{Diagnostic Plots}
 \usage{
-\method{plot}{itnb}(x, which, ...)
+\method{plot}{itnb}(x, ...)
 }
 \arguments{
 \item{x}{\link{itnb-object}.}
 
-\item{which}{Integer (> 0):}
-
-\item{...}{Additional arguments (see details).}
+\item{...}{Additional arguments (not used in the current implementation).}
 }
 \value{
 An invisible \code{NULL}.
 }
 \description{
 Diagnostic plots for inflated and truncated negative binomial regression models.
-}
-\details{
-...
 }
