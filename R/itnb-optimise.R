@@ -969,7 +969,9 @@ coef.itnb <- function(object, ...) {
 #' @description Diagnostic plots for inflated and truncated negative binomial regression models.
 #'
 #' @param x \link{itnb-object}.
-#' @param ... Additional arguments (not used in the current implementation).
+#' @param ... Additional arguments (see details).
+#'
+#' @details The additional argument is \code{type}, which can be \code{"fit"} or \code{"trace"}. The first shows the diagnostics plots of the fitted model object (similar to \link{plot.lm} does for \link{glm}-objects), while the second shows the trace of the log-likelihood when the model is optimised using the EM-algorithm.
 #'
 #' @return An invisible \code{NULL}.
 #'
@@ -977,44 +979,73 @@ coef.itnb <- function(object, ...) {
 #'
 #' @export
 plot.itnb <- function(x, ...) {
+    ##
+    #
     oldpar <- par(no.readonly = TRUE)
     on.exit(par(oldpar))
 
     ##
     #
-    N <- length(r)
+    dots <- list(...)
+    if (is.null(dots[["type"]])) {
+        type <- "fit"
+    }
+    else {
+        type <- dots[["type"]]
+    }
 
-    #
-    r <- residuals(x, type = "deviance")
-    mr <- mean(r)
-    sr <- sd(r)
-
-    #
-    f <- predict(x, type = "link")
-
-    #
-    or <- sort(r)
-    p <- (seq_len(N) - 0.5) / N
-    tp <- qnorm(p, 0, 1)
-
-    #
-    qr_x <- qr(x$data$X)
-    hat_x <- rowSums(qr.Q(qr_x)^2)
-    leverage <- hat_x / (1 - hat_x)
-
-    k <- length(unlist(coef(x)))
-    ds <- (r^2 / k) * (hat_x / (1 - hat_x)^2)
+    if (!(type %in% c("fit", "trace"))) {
+        stop("'type' has to be equal to either 'fit' or 'trace'.")
+    }
 
     ##
     #
-    par(mfrow = c(2, 2))
-    plot(f, r, xlab = "Linear predictor", ylab = "Deviance residuals"); abline(h = 0, col = "dodgerblue2", lwd = 2)
+    if (type == "fit") {
+        ##
+        #
+        N <- length(r)
 
-    plot(tp, or, xlab = "Quantiles of standard normal distribtion", ylab = "Ordered deviance residuals"); abline(mr - sr * mean(tp), sr, col = "dodgerblue2", lwd = 2)
+        #
+        r <- residuals(x, type = "deviance")
+        mr <- mean(r)
+        sr <- sd(r)
 
-    plot(leverage, ds, xlab = "Leverage", ylab = "Cook's statistic", xlim = c(min(leverage, 3 * k / N - 1 / N), max(leverage, 3 * k / N + 1 / N)), ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(v = 3 * k / N, col = "dodgerblue2", lwd = 2); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+        #
+        f <- predict(x, type = "link")
 
-    plot(seq_len(N), ds, xlab = "Observation index", ylab = "Cook's statistic", ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+        #
+        or <- sort(r)
+        p <- (seq_len(N) - 0.5) / N
+        tp <- qnorm(p, 0, 1)
+
+        #
+        qr_x <- qr(x$data$X)
+        hat_x <- rowSums(qr.Q(qr_x)^2)
+        leverage <- hat_x / (1 - hat_x)
+
+        k <- length(unlist(coef(x)))
+        ds <- (r^2 / k) * (hat_x / (1 - hat_x)^2)
+
+        ##
+        #
+        par(mfrow = c(2, 2))
+        plot(f, r, xlab = "Linear predictor", ylab = "Deviance residuals"); abline(h = 0, col = "dodgerblue2", lwd = 2)
+
+        plot(tp, or, xlab = "Quantiles of standard normal distribtion", ylab = "Ordered deviance residuals"); abline(mr - sr * mean(tp), sr, col = "dodgerblue2", lwd = 2)
+
+        plot(leverage, ds, xlab = "Leverage", ylab = "Cook's statistic", xlim = c(min(leverage, 3 * k / N - 1 / N), max(leverage, 3 * k / N + 1 / N)), ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(v = 3 * k / N, col = "dodgerblue2", lwd = 2); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+
+        plot(seq_len(N), ds, xlab = "Observation index", ylab = "Cook's statistic", ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
+    }
+    else {
+        if (is.na(x$iterations)) {
+            stop("When 'type = \"trace\"' the method used to optimise the parameters has to be the EM-algorithm, i.e., 'method = \"em\"' has to be passed to the control object.")
+        }
+
+        trace <- x$trace[-1, , drop = FALSE]
+        plot(trace$Iteration, trace$LogLikelihood, xlab = "Iteration", ylab = "Log-likelihood", pch = 16)
+        points(trace$Iteration, trace$LogLikelihood, type = "l")
+    }
 
     ##
     #
