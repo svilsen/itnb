@@ -8,11 +8,11 @@
 An inflated and truncated negative binomial regression model, with parameter estimation by the EM-algorithm, and confidence envelopes by either the parametric or non-parametric bootstrap.
 }
 \author{
-\strong{Maintainer}: Søren B. Vilsen \email{svilsen@math.aau.dk}
+\strong{Maintainer}: Søren B. Vilsen \email{svilsen@mp.aau.dk}
 
 Authors:
 \itemize{
-  \item Søren B. Vilsen \email{svilsen@math.aau.dk}
+  \item Søren B. Vilsen \email{svilsen@mp.aau.dk}
 }
 
 }

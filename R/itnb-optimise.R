@@ -13,7 +13,7 @@ strip_terms <- function(formula) {
 #'
 #' @description Creates a list of default options.
 #'
-#' @param method String: The method used to optimise the parameters (currently only accepts '\code{method = "em"}').
+#' @param method String: The method used to optimise the parameters, either \code{"em"} (default) or \code{"mle"}. NB: this is only relevant if an inflation is included in the model, otherwise the method will always use MLE \code{"mle"}.
 #' @param trace Numeric (>= 0): Showing a trace every '\code{trace}' number of iterations.
 #' @param tolerance Numeric (> 0): Convergence tolerance.
 #' @param iteration_min Numeric (>= 0): The minimum number of allowed iterations.

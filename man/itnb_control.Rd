@@ -18,7 +18,7 @@ itnb_control(
 )
 }
 \arguments{
-\item{method}{String: The method used to optimise the parameters (currently only accepts '\code{method = "em"}').}
+\item{method}{String: The method used to optimise the parameters, either \code{"em"} (default) or \code{"mle"}. NB: this is only relevant if an inflation is included in the model, otherwise the method will always use MLE \code{"mle"}.}
 
 \item{trace}{Numeric (>= 0): Showing a trace every '\code{trace}' number of iterations.}
 
