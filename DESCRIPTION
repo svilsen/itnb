@@ -4,7 +4,7 @@ Title: Inflated And Truncated Negative Binomial Regression
 Version: 0.2
 Date: 2024-10-04
 Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@mp.aau.dk") 
-Description: An inflated and truncated negative binomial regression model, with parameter estimation by the EM-algorithm, and confidence envelopes by either the parametric or non-parametric bootstrap.
+Description: Fits inflated and truncated negative binomial regression models with parameter estimation via the EM or MLE; confidence envelopes and hypothesis testing are supported through parametric or non-parametric bootstrap.
 License: MIT + file LICENSE
 Imports: Rcpp (>= 1.0.4.6), stats, graphics, grDevices
 LinkingTo: Rcpp, RcppArmadillo, roptim

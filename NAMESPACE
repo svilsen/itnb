@@ -26,7 +26,8 @@ importFrom(graphics,
   'box',
   'hist',
   'legend',
-  'par'
+  'par',
+  'points'
 )
 importFrom(stats,
   'as.formula',

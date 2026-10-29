@@ -5,7 +5,7 @@
 #'
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats 'terms' 'as.formula' 'model.frame' 'model.matrix' 'model.response' 'quantile' 'coef' 'delete.response' 'fitted.values' 'predict' 'residuals' 'printCoefmat' 'sd' 'pnorm' 'qnorm' 'qt' 'pchisq' 'qchisq' 'dchisq' 'density'
-#' @importFrom graphics 'abline' 'box' 'hist' 'legend' 'par'
+#' @importFrom graphics 'abline' 'box' 'hist' 'points' 'legend' 'par'
 #' @importFrom grDevices 'rgb'
 #'
 #' @useDynLib itnb
