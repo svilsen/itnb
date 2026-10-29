@@ -975,6 +975,7 @@ coef.itnb <- function(object, ...) {
 #' \describe{
 #'      \item{\code{type}}{String: Either \code{"fit"} or \code{"trace"}, specifying whether to show diagnostic plots (similar to \link{plot.lm} for \link{glm}-objects) or trace for the EM-algorithm, respectively.}
 #'      \item{\code{param}}{String: Specifying the parameter to show for the trace-plot.}
+#'      \item{\code{initial}}{TRUE/FALSE: Should the first iteration of the trace-plot be ignored?}
 #' }
 #'
 #' @return An invisible \code{NULL}.
@@ -999,7 +1000,7 @@ plot.itnb <- function(x, ...) {
     }
 
     if (!(type %in% c("fit", "trace"))) {
-        stop("'type' has to be equal to either 'fit' or 'trace'.")
+        stop("'type' only takes the values 'fit' or 'trace'.")
     }
 
     ##
@@ -1040,13 +1041,38 @@ plot.itnb <- function(x, ...) {
         plot(seq_len(N), ds, xlab = "Observation index", ylab = "Cook's statistic", ylim = c(min(ds, 4 / (N - k) - 1 / N), max(ds, 4 / (N - k) + 1 / N))); abline(h = 4 / (N - k), col = "dodgerblue2", lwd = 2)
     }
     else {
+        ##
+        #
         if (is.na(x$iterations)) {
             stop("When 'type = \"trace\"' the method used to optimise the parameters has to be the EM-algorithm, i.e., 'method = \"em\"' has to be passed to the control object.")
         }
 
-        x_trace <- x$trace[x$trace$Iteration > 0, , drop = FALSE]
+        ##
+        #
+        if (is.null(dots[["initial"]])) {
+            initial <- FALSE
+        }
+        else {
+            initial <- dots[["initial"]]
+        }
+
+        if (!is.logical(initial)) {
+            stop("'initial' has to logical.")
+        }
+
+        ##
+        #
+        if (initial) {
+            x_trace <- x$trace
+        }
+        else {
+            x_trace <- x$trace[x$trace$Iteration > 0, , drop = FALSE]
+        }
+
+        #
         x_iteration <- x_trace$Iteration
 
+        #
         if (is.null(dots[["param"]])) {
             param <- "LogLikelihood"
         }
@@ -1054,6 +1080,7 @@ plot.itnb <- function(x, ...) {
             param <- dots[["param"]]
         }
 
+        #
         if (param == "LogLikelihood") {
             y_trace <- x_trace$LogLikelihood
             ylab <- "Log-likelihood"
@@ -1075,6 +1102,8 @@ plot.itnb <- function(x, ...) {
             ylab <- param
         }
 
+        ##
+        #
         plot(x_iteration, y_trace, xlab = "Iteration", ylab = ylab, pch = 16)
         points(x_iteration, y_trace, type = "l")
     }

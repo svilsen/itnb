@@ -22,5 +22,6 @@ The additional arguments are:
 \describe{
      \item{\code{type}}{String: Either \code{"fit"} or \code{"trace"}, specifying whether to show diagnostic plots (similar to \link{plot.lm} for \link{glm}-objects) or trace for the EM-algorithm, respectively.}
      \item{\code{param}}{String: Specifying the parameter to show for the trace-plot.}
+     \item{\code{initial}}{TRUE/FALSE: Should the first iteration of the trace-plot be ignored?}
 }
 }
