@@ -485,7 +485,7 @@ predict.itnb <- function(object, ...) {
     #
     link <- object[["link"]]
 
-    beta <- coef(object, par = "beta")
+    beta <- coef(object, param = "beta")
     pred <- newdata %*% beta
 
     #
