@@ -18,5 +18,9 @@ An invisible \code{NULL}.
 Diagnostic plots for inflated and truncated negative binomial regression models.
 }
 \details{
-The additional argument is \code{type}, which can be \code{"fit"} or \code{"trace"}. The first shows the diagnostics plots of the fitted model object (similar to \link{plot.lm} does for \link{glm}-objects), while the second shows the trace of the log-likelihood when the model is optimised using the EM-algorithm.
+The additional arguments are:
+\describe{
+     \item{\code{type}}{String: Either \code{"fit"} or \code{"trace"}, specifying whether to show diagnostic plots (similar to \link{plot.lm} for \link{glm}-objects) or trace for the EM-algorithm, respectively.}
+     \item{\code{param}}{String: Specifying the parameter to show for the trace-plot.}
+}
 }

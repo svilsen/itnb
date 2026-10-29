@@ -8,6 +8,7 @@
 const double e = 2.0 * std::numeric_limits<double>::epsilon();
 
 //// Derivative of beta function
+//
 double beta_derivative_integrand(const double & s, const double & t, const double & theta) {
     //
     const double s_rev = 1.0 - s;
@@ -19,6 +20,7 @@ double beta_derivative_integrand(const double & s, const double & t, const doubl
     return r;
 }
 
+//
 double beta_derivative_rectangle(const double & a, const double & b, const double & theta, const int & t, const int & N) {
     //
     const double delta_x = (b - a) / N;
@@ -30,6 +32,7 @@ double beta_derivative_rectangle(const double & a, const double & b, const doubl
     return i;
 }
 
+//
 double beta_derivative_boole(const double & a, const double & b, const double & theta, const int & t, const int & N) {
     //
     const double delta_x = (b - a) / N;
@@ -82,6 +85,68 @@ void update_p(double & p, const arma::vec & yi, const arma::vec & z, const int &
     }
 }
 
+//// Complete log-likelihoods
+//
+double complete_loglikelihood_itpois(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & p, const int & i, const int & t, Link & LO) {
+    //
+    const int & N = y.size();
+
+    //
+    double cll = 0.0;
+    for (int n = 0; n < N; n++) {
+        //
+        const arma::rowvec & x_n = X.row(n);
+        const double & eta_n = arma::dot(x_n, beta);
+        const double & mu_n = LO.link_inv(eta_n);
+
+        //
+        const double & y_n = y[n];
+        const double & f_n = ditpois_cpp(y_n, mu_n, 0.0, i, t);
+        if (y_n == i) {
+            cll += std::log(p + (1.0 - p) * std::exp(f_n));
+        }
+        else {
+            cll += std::log(1.0 - p) + f_n;
+        }
+    }
+
+    if (std::isinf(cll) || std::isnan(cll)) {
+        cll = -1e16;
+    }
+
+    return cll;
+}
+
+//
+double complete_loglikelihood_itnb(const arma::mat & X, const arma::vec & y, const arma::vec & beta, const double & theta, const double & p, const int & i, const int & t, Link & LO) {
+    //
+    const int & N = y.size();
+
+    //
+    double cll = 0.0;
+    for (int n = 0; n < N; n++) {
+        //
+        const arma::rowvec & x_n = X.row(n);
+        const double & eta_n = arma::dot(x_n, beta);
+        const double & mu_n = LO.link_inv(eta_n);
+
+        //
+        const double & y_n = y[n];
+        const double & f_n = ditnb_cpp(y_n, mu_n, theta, 0.0, i, t);
+        if (y_n == i) {
+            cll += std::log(p + (1.0 - p) * std::exp(f_n));
+        }
+        else {
+            cll += std::log(1.0 - p) + f_n;
+        }
+    }
+
+    if (std::isinf(cll) || std::isnan(cll)) {
+        cll = -1e16;
+    }
+
+    return cll;
+}
 
 ////
 // [[Rcpp::export]]

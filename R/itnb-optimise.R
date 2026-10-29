@@ -920,9 +920,9 @@ print.summary.itnb <- function(x, ...) {
 #' @param object \link{itnb-object}.
 #' @param ... Additional arguments (see details).
 #'
-#' @details The additional argument is '\code{par}': a string specifying which parameter should be returned by the function, either \code{"beta"}, \code{"alpha"}, or \code{"p"}.
+#' @details The additional argument is '\code{param}': a string specifying which parameter should be returned by the function, either \code{"beta"}, \code{"alpha"}, or \code{"p"}.
 #'
-#' @return If '\code{par}' is \code{NULL} a list of all parameters will be returned, otherwise the function only returns the parameter specified by '\code{par}'.
+#' @return If '\code{param}' is \code{NULL} a list of all parameters will be returned, otherwise the function only returns the parameter specified by '\code{par}'.
 #'
 #' @method coef itnb
 #'
@@ -930,7 +930,7 @@ print.summary.itnb <- function(x, ...) {
 coef.itnb <- function(object, ...) {
     dots <- list(...)
 
-    if (is.null(dots[["par"]])) {
+    if (is.null(dots[["param"]])) {
         if (object[["control"]][["overdispersion"]]) {
             if (object$i > 0) {
                 r <- object[c("beta", "alpha", "p")]
@@ -948,17 +948,17 @@ coef.itnb <- function(object, ...) {
             }
         }
     }
-    else if (dots[["par"]] == "beta") {
+    else if (dots[["param"]] == "beta") {
         r <- object[["beta"]]
     }
-    else if (dots[["par"]] == "alpha") {
+    else if (dots[["param"]] == "alpha") {
         r <- object[["alpha"]]
     }
-    else if (dots[["par"]] == "p") {
+    else if (dots[["param"]] == "p") {
         r <- object[["p"]]
     }
     else {
-        stop("'pars' only takes the values 'beta', 'alpha', or 'p'.")
+        stop("'param' only takes the values 'beta', 'alpha', or 'p'.")
     }
 
     return(r)
@@ -971,7 +971,11 @@ coef.itnb <- function(object, ...) {
 #' @param x \link{itnb-object}.
 #' @param ... Additional arguments (see details).
 #'
-#' @details The additional argument is \code{type}, which can be \code{"fit"} or \code{"trace"}. The first shows the diagnostics plots of the fitted model object (similar to \link{plot.lm} does for \link{glm}-objects), while the second shows the trace of the log-likelihood when the model is optimised using the EM-algorithm.
+#' @details The additional arguments are:
+#' \describe{
+#'      \item{\code{type}}{String: Either \code{"fit"} or \code{"trace"}, specifying whether to show diagnostic plots (similar to \link{plot.lm} for \link{glm}-objects) or trace for the EM-algorithm, respectively.}
+#'      \item{\code{param}}{String: Specifying the parameter to show for the trace-plot.}
+#' }
 #'
 #' @return An invisible \code{NULL}.
 #'
@@ -1040,9 +1044,39 @@ plot.itnb <- function(x, ...) {
             stop("When 'type = \"trace\"' the method used to optimise the parameters has to be the EM-algorithm, i.e., 'method = \"em\"' has to be passed to the control object.")
         }
 
-        trace <- x$trace[-1, , drop = FALSE]
-        plot(trace$Iteration, trace$LogLikelihood, xlab = "Iteration", ylab = "Log-likelihood", pch = 16)
-        points(trace$Iteration, trace$LogLikelihood, type = "l")
+        x_trace <- x$trace[x$trace$Iteration > 0, , drop = FALSE]
+        x_iteration <- x_trace$Iteration
+
+        if (is.null(dots[["param"]])) {
+            param <- "LogLikelihood"
+        }
+        else {
+            param <- dots[["param"]]
+        }
+
+        if (param == "LogLikelihood") {
+            y_trace <- x_trace$LogLikelihood
+            ylab <- "Log-likelihood"
+        }
+        else if (param %in% c("Intercept", "(Intercept)")) {
+            y_trace <- x_trace$`(Intercept)`
+            ylab <- "Intercept"
+        }
+        else if (param %in% c("Inflation", "inflation", "p")) {
+            y_trace <- x_trace$p
+            ylab <- "Inflation"
+        }
+        else if (param %in% c("Overdispersion", "overdispersion", "alpha")) {
+            y_trace <- x_trace$alpha
+            ylab <- "Overdispersion"
+        }
+        else {
+            y_trace <- x_trace[, param == colnames(x_trace)]
+            ylab <- param
+        }
+
+        plot(x_iteration, y_trace, xlab = "Iteration", ylab = ylab, pch = 16)
+        points(x_iteration, y_trace, type = "l")
     }
 
     ##

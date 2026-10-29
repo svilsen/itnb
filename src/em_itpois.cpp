@@ -10,7 +10,8 @@
 
 using namespace roptim;
 
-// Truncated negative binomial parameters
+////
+//
 class EM_ITPOIS : public Functor {
 public:
     // Parameters
@@ -138,13 +139,19 @@ void optimise_itpois(
     EM_ITPOIS log_likelihood(X, y, yi, z, i, t, steps, exact, LO);
 
     //
-    loglike_j = opt.value();
-    double loglike_j_old = HUGE_VAL;
-    double delta_loglike_j = loglike_j - loglike_j_old;
+    double loglike_j_old, delta_loglike_j;
+    loglike_j = complete_loglikelihood_itpois(X, y, beta_j, p_j, i, t, LO);
 
     if (trace > 0) {
-        Rcpp::Rcout << "Iteration: " << j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << delta_loglike_j << "\n"
+        Rcpp::Rcout << "Iteration: " << j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << HUGE_VAL << "\n"
                     << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 0.0 << "\t p = " << p_j << "\n";
+    }
+
+    if (save_trace) {
+        beta_trace.row(0) = beta_j.t();
+        alpha_trace[0] = 0.0;
+        p_trace[0] = p_j;
+        loglike_trace[0] = loglike_j;
     }
 
     //
@@ -171,7 +178,7 @@ void optimise_itpois(
 
         //// Convergence
         loglike_j_old = loglike_j;
-        loglike_j = opt.value();
+        loglike_j = complete_loglikelihood_itpois(X, y, beta_j, p_j, i, t, LO);
         delta_loglike_j = loglike_j - loglike_j_old;
 
         if (delta_loglike_j < 0.0) {
@@ -198,7 +205,7 @@ void optimise_itpois(
         //// Trace
         if (trace > 0) {
             if (((j % trace) == 0) | (!not_converged)) {
-                Rcpp::Rcout << "Iteration: " <<  j << "\t Current log-likelihood: " << loglike_j << "\t Absolute change in log-likelihood: " << delta_loglike_j << "\n"
+                Rcpp::Rcout << "Iteration: " <<  j << "\t Current log-likelihood: " << loglike_j << "\t Change in log-likelihood: " << delta_loglike_j << "\n"
                             << "\t Parameters: " << "\t beta = " << beta_j.t() << "\t alpha = " << 0.0 << "\t p = " << p_j << "\n";
             }
         }
@@ -251,16 +258,9 @@ Rcpp::List em_itpois_cpp(
     arma::vec alpha_trace, p_trace, loglike_trace;
     if (save_trace) {
         beta_trace.set_size(iteration_max + 1, M);
-        beta_trace.row(0) = beta_0.t();
-
         alpha_trace.set_size(iteration_max + 1);
-        alpha_trace[0] = 0.0;
-
         p_trace.set_size(iteration_max + 1);
-        p_trace[0] = p_0;
-
         loglike_trace.set_size(iteration_max + 1);
-        loglike_trace[0] = HUGE_VAL;
     }
 
     //

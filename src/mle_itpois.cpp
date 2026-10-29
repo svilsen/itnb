@@ -10,7 +10,8 @@
 
 using namespace roptim;
 
-//// Truncated negative binomial parameters
+////
+//
 class MLE_ITPOIS : public Functor {
 public:
     // Constructor
@@ -23,20 +24,7 @@ public:
         const double & p = 1.0 / (1.0 + std::exp(-par[M]));
 
         //
-        double d = 0.0;
-        for (int n = 0; n < N; n++) {
-            //
-            const arma::rowvec & x_n = X.row(n);
-            const double & eta_n = arma::dot(x_n, beta);
-            const double & mu_n = LO.link_inv(eta_n);
-
-            d -= ditpois_cpp(y[n], mu_n, p, i, t);
-        }
-
-        if (std::isinf(d) || std::isnan(d)) {
-            d = 1e16;
-        }
-
+        double d = -complete_loglikelihood_itpois(X, y, beta, p, i, t, LO);
         return d;
     }
 
@@ -122,7 +110,7 @@ private:
     Link LO;
 };
 
-//// Optimiser
+//
 void optimise_itpois(
         arma::vec & beta_j, double & p_j, double & loglike_j,
         int & j, bool & not_converged, std::string & convergence_flag, arma::mat & approx_hessian,

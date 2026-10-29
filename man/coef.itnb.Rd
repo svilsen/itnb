@@ -12,11 +12,11 @@
 \item{...}{Additional arguments (see details).}
 }
 \value{
-If '\code{par}' is \code{NULL} a list of all parameters will be returned, otherwise the function only returns the parameter specified by '\code{par}'.
+If '\code{param}' is \code{NULL} a list of all parameters will be returned, otherwise the function only returns the parameter specified by '\code{par}'.
 }
 \description{
 Coefficients extraction function for \link{itnb-object}'s, i.e., objects of class '\code{itnb}'.
 }
 \details{
-The additional argument is '\code{par}': a string specifying which parameter should be returned by the function, either \code{"beta"}, \code{"alpha"}, or \code{"p"}.
+The additional argument is '\code{param}': a string specifying which parameter should be returned by the function, either \code{"beta"}, \code{"alpha"}, or \code{"p"}.
 }
